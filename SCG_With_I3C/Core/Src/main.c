@@ -43,12 +43,16 @@
 
 COM_InitTypeDef BspCOMInit;
 
+I3C_HandleTypeDef hi3c1;
+
 /* USER CODE BEGIN PV */
 
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
+static void MX_GPIO_Init(void);
+static void MX_I3C1_Init(void);
 static void MX_ICACHE_Init(void);
 /* USER CODE BEGIN PFP */
 
@@ -87,6 +91,8 @@ int main(void)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
+  MX_GPIO_Init();
+  MX_I3C1_Init();
   MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
 
@@ -113,9 +119,8 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  LL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-	  //HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-	  LL_mDelay(50);
+	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -129,42 +134,116 @@ int main(void)
   */
 void SystemClock_Config(void)
 {
-  LL_FLASH_SetLatency(LL_FLASH_LATENCY_3);
-  while(LL_FLASH_GetLatency()!= LL_FLASH_LATENCY_3)
-  {
-  }
+  RCC_OscInitTypeDef RCC_OscInitStruct = {0};
+  RCC_ClkInitTypeDef RCC_ClkInitStruct = {0};
 
-  LL_PWR_SetRegulVoltageScaling(LL_PWR_REGU_VOLTAGE_SCALE3);
-  while (LL_PWR_IsActiveFlag_VOS() == 0)
-  {
-  }
-  LL_RCC_HSI_Enable();
+  /** Configure the main internal regulator output voltage
+  */
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
-   /* Wait till HSI is ready */
-  while(LL_RCC_HSI_IsReady() != 1)
-  {
-  }
+  while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
-  LL_RCC_HSI_SetCalibTrimming(64);
-  LL_RCC_HSI_SetDivider(LL_RCC_HSI_DIV_1);
-  LL_RCC_SetSysClkSource(LL_RCC_SYS_CLKSOURCE_HSI);
-
-   /* Wait till System clock is ready */
-  while(LL_RCC_GetSysClkSource() != LL_RCC_SYS_CLKSOURCE_STATUS_HSI)
-  {
-  }
-
-  LL_RCC_SetAHBPrescaler(LL_RCC_SYSCLK_DIV_1);
-  LL_RCC_SetAPB1Prescaler(LL_RCC_APB1_DIV_1);
-  LL_RCC_SetAPB2Prescaler(LL_RCC_APB2_DIV_1);
-  LL_RCC_SetAPB3Prescaler(LL_RCC_APB3_DIV_1);
-  LL_SetSystemCoreClock(64000000);
-
-   /* Update the time base */
-  if (HAL_InitTick (TICK_INT_PRIORITY) != HAL_OK)
+  /** Initializes the RCC Oscillators according to the specified parameters
+  * in the RCC_OscInitTypeDef structure.
+  */
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
+  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
+  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
+  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.LSIState = RCC_LSI_ON;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
   }
+
+  /** Initializes the CPU, AHB and APB buses clocks
+  */
+  RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
+                              |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
+                              |RCC_CLOCKTYPE_PCLK3;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
+  RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
+  RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
+
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** LSCO configuration
+  */
+  HAL_RCCEx_EnableLSCO(RCC_LSCOSOURCE_LSI);
+
+  /** Configure the programming delay
+  */
+  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_1);
+}
+
+/**
+  * @brief I3C1 Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_I3C1_Init(void)
+{
+
+  /* USER CODE BEGIN I3C1_Init 0 */
+
+  /* USER CODE END I3C1_Init 0 */
+
+  I3C_FifoConfTypeDef sFifoConfig = {0};
+  I3C_CtrlConfTypeDef sCtrlConfig = {0};
+
+  /* USER CODE BEGIN I3C1_Init 1 */
+
+  /* USER CODE END I3C1_Init 1 */
+  hi3c1.Instance = I3C1;
+  hi3c1.Mode = HAL_I3C_MODE_CONTROLLER;
+  hi3c1.Init.CtrlBusCharacteristic.SDAHoldTime = HAL_I3C_SDA_HOLD_TIME_0_5;
+  hi3c1.Init.CtrlBusCharacteristic.WaitTime = HAL_I3C_OWN_ACTIVITY_STATE_0;
+  hi3c1.Init.CtrlBusCharacteristic.SCLPPLowDuration = 0x1e;
+  hi3c1.Init.CtrlBusCharacteristic.SCLI3CHighDuration = 0x13;
+  hi3c1.Init.CtrlBusCharacteristic.SCLODLowDuration = 0x1e;
+  hi3c1.Init.CtrlBusCharacteristic.SCLI2CHighDuration = 0x00;
+  hi3c1.Init.CtrlBusCharacteristic.BusFreeDuration = 0x0d;
+  hi3c1.Init.CtrlBusCharacteristic.BusIdleDuration = 0x3e;
+  if (HAL_I3C_Init(&hi3c1) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure FIFO
+  */
+  sFifoConfig.RxFifoThreshold = HAL_I3C_RXFIFO_THRESHOLD_1_4;
+  sFifoConfig.TxFifoThreshold = HAL_I3C_TXFIFO_THRESHOLD_1_4;
+  sFifoConfig.ControlFifo = HAL_I3C_CONTROLFIFO_DISABLE;
+  sFifoConfig.StatusFifo = HAL_I3C_STATUSFIFO_DISABLE;
+  if (HAL_I3C_SetConfigFifo(&hi3c1, &sFifoConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+
+  /** Configure controller
+  */
+  sCtrlConfig.DynamicAddr = 0;
+  sCtrlConfig.StallTime = 0x00;
+  sCtrlConfig.HotJoinAllowed = DISABLE;
+  sCtrlConfig.ACKStallState = DISABLE;
+  sCtrlConfig.CCCStallState = DISABLE;
+  sCtrlConfig.TxStallState = DISABLE;
+  sCtrlConfig.RxStallState = DISABLE;
+  sCtrlConfig.HighKeeperSDA = DISABLE;
+  if (HAL_I3C_Ctrl_Config(&hi3c1, &sCtrlConfig) != HAL_OK)
+  {
+    Error_Handler();
+  }
+  /* USER CODE BEGIN I3C1_Init 2 */
+
+  /* USER CODE END I3C1_Init 2 */
+
 }
 
 /**
@@ -185,11 +264,41 @@ static void MX_ICACHE_Init(void)
 
   /** Enable instruction cache (default 2-ways set associative cache)
   */
-  LL_ICACHE_Enable();
+  if (HAL_ICACHE_Enable() != HAL_OK)
+  {
+    Error_Handler();
+  }
   /* USER CODE BEGIN ICACHE_Init 2 */
 
   /* USER CODE END ICACHE_Init 2 */
 
+}
+
+/**
+  * @brief GPIO Initialization Function
+  * @param None
+  * @retval None
+  */
+static void MX_GPIO_Init(void)
+{
+  GPIO_InitTypeDef GPIO_InitStruct = {0};
+  /* USER CODE BEGIN MX_GPIO_Init_1 */
+
+  /* USER CODE END MX_GPIO_Init_1 */
+
+  /* GPIO Ports Clock Enable */
+  __HAL_RCC_GPIOB_CLK_ENABLE();
+  __HAL_RCC_GPIOC_CLK_ENABLE();
+
+  /*Configure GPIO pin : PB2 */
+  GPIO_InitStruct.Pin = GPIO_PIN_2;
+  GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;
+  GPIO_InitStruct.Pull = GPIO_NOPULL;
+  HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
+
+  /* USER CODE BEGIN MX_GPIO_Init_2 */
+
+  /* USER CODE END MX_GPIO_Init_2 */
 }
 
 /* USER CODE BEGIN 4 */
