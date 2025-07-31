@@ -95,7 +95,9 @@ int main(void)
   MX_I3C1_Init();
   MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
-
+  uint64_t TargetPayload = 0;
+  HAL_StatusTypeDef status;
+  status = HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
   /* USER CODE END 2 */
 
   /* Initialize led */
@@ -120,7 +122,7 @@ int main(void)
   while (1)
   {
 	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-	  HAL_Delay(1000);
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

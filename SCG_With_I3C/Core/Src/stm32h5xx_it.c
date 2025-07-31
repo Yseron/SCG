@@ -55,7 +55,7 @@
 /* USER CODE END 0 */
 
 /* External variables --------------------------------------------------------*/
-
+extern I3C_HandleTypeDef hi3c1;
 /* USER CODE BEGIN EV */
 
 /* USER CODE END EV */
@@ -210,6 +210,34 @@ void EXTI13_IRQHandler(void)
   /* USER CODE BEGIN EXTI13_IRQn 1 */
 
   /* USER CODE END EXTI13_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I3C1 Event interrupt.
+  */
+void I3C1_EV_IRQHandler(void)
+{
+  /* USER CODE BEGIN I3C1_EV_IRQn 0 */
+
+  /* USER CODE END I3C1_EV_IRQn 0 */
+  HAL_I3C_EV_IRQHandler(&hi3c1);
+  /* USER CODE BEGIN I3C1_EV_IRQn 1 */
+
+  /* USER CODE END I3C1_EV_IRQn 1 */
+}
+
+/**
+  * @brief This function handles I3C1 Error interrupt.
+  */
+void I3C1_ER_IRQHandler(void)
+{
+  /* USER CODE BEGIN I3C1_ER_IRQn 0 */
+
+  /* USER CODE END I3C1_ER_IRQn 0 */
+  HAL_I3C_ER_IRQHandler(&hi3c1);
+  /* USER CODE BEGIN I3C1_ER_IRQn 1 */
+
+  /* USER CODE END I3C1_ER_IRQn 1 */
 }
 
 /* USER CODE BEGIN 1 */
