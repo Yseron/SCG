@@ -97,7 +97,6 @@ int main(void)
   /* USER CODE BEGIN 2 */
   uint64_t TargetPayload = 0;
   HAL_StatusTypeDef status;
-  status = HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
   /* USER CODE END 2 */
 
   /* Initialize led */
@@ -123,6 +122,7 @@ int main(void)
   {
 	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 	  HAL_Delay(100);
+	  status = HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -131,6 +131,12 @@ int main(void)
 }
 
 /**
+ * LL_I3C_ControllerHandleCCC(
+        I3Cx,                      // I3C peripheral base
+        ENTDAA_CCC,                // CCC code
+        0U,                        // No defining byte
+        LL_I3C_GENERATE_STOP       // End the command with STOP
+    );
   * @brief System Clock Configuration
   * @retval None
   */
