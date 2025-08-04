@@ -31,7 +31,8 @@
 
 /* Private define ------------------------------------------------------------*/
 /* USER CODE BEGIN PD */
-
+#define I3C_BROADCAST_ADDR      0x7E
+#define ENTDAA_CCC              0x07  // ENTDAA CCC code
 /* USER CODE END PD */
 
 /* Private macro -------------------------------------------------------------*/
