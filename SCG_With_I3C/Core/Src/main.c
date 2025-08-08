@@ -123,7 +123,7 @@ int main(void)
 	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 	  HAL_Delay(100);
 	  HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
-	  HAL_Delay(100);
+	  HAL_Delay(101);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
