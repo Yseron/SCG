@@ -97,7 +97,6 @@ int main(void)
   MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
   uint64_t TargetPayload = 0;
-  HAL_StatusTypeDef status;
   /* USER CODE END 2 */
 
   /* Initialize led */
@@ -123,7 +122,8 @@ int main(void)
   {
 	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
 	  HAL_Delay(100);
-	  status = HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
+	  HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -132,12 +132,6 @@ int main(void)
 }
 
 /**
- * LL_I3C_ControllerHandleCCC(
-        I3Cx,                      // I3C peripheral base
-        ENTDAA_CCC,                // CCC code
-        0U,                        // No defining byte
-        LL_I3C_GENERATE_STOP       // End the command with STOP
-    );
   * @brief System Clock Configuration
   * @retval None
   */
@@ -148,19 +142,27 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
   /** Initializes the RCC Oscillators according to the specified parameters
   * in the RCC_OscInitTypeDef structure.
   */
-  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_HSI|RCC_OSCILLATORTYPE_LSI;
-  RCC_OscInitStruct.HSIState = RCC_HSI_ON;
-  RCC_OscInitStruct.HSIDiv = RCC_HSI_DIV1;
-  RCC_OscInitStruct.HSICalibrationValue = RCC_HSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_LSI|RCC_OSCILLATORTYPE_CSI;
   RCC_OscInitStruct.LSIState = RCC_LSI_ON;
-  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
+  RCC_OscInitStruct.CSIState = RCC_CSI_ON;
+  RCC_OscInitStruct.CSICalibrationValue = RCC_CSICALIBRATION_DEFAULT;
+  RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
+  RCC_OscInitStruct.PLL.PLLSource = RCC_PLL1_SOURCE_CSI;
+  RCC_OscInitStruct.PLL.PLLM = 1;
+  RCC_OscInitStruct.PLL.PLLN = 125;
+  RCC_OscInitStruct.PLL.PLLP = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLR = 2;
+  RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_2;
+  RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;
+  RCC_OscInitStruct.PLL.PLLFRACN = 0;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -171,13 +173,13 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.ClockType = RCC_CLOCKTYPE_HCLK|RCC_CLOCKTYPE_SYSCLK
                               |RCC_CLOCKTYPE_PCLK1|RCC_CLOCKTYPE_PCLK2
                               |RCC_CLOCKTYPE_PCLK3;
-  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_HSI;
+  RCC_ClkInitStruct.SYSCLKSource = RCC_SYSCLKSOURCE_PLLCLK;
   RCC_ClkInitStruct.AHBCLKDivider = RCC_SYSCLK_DIV1;
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
   {
     Error_Handler();
   }
@@ -188,7 +190,7 @@ void SystemClock_Config(void)
 
   /** Configure the programming delay
   */
-  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_1);
+  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_2);
 }
 
 /**
@@ -211,14 +213,14 @@ static void MX_I3C1_Init(void)
   /* USER CODE END I3C1_Init 1 */
   hi3c1.Instance = I3C1;
   hi3c1.Mode = HAL_I3C_MODE_CONTROLLER;
-  hi3c1.Init.CtrlBusCharacteristic.SDAHoldTime = HAL_I3C_SDA_HOLD_TIME_0_5;
+  hi3c1.Init.CtrlBusCharacteristic.SDAHoldTime = HAL_I3C_SDA_HOLD_TIME_1_5;
   hi3c1.Init.CtrlBusCharacteristic.WaitTime = HAL_I3C_OWN_ACTIVITY_STATE_0;
-  hi3c1.Init.CtrlBusCharacteristic.SCLPPLowDuration = 0x1e;
-  hi3c1.Init.CtrlBusCharacteristic.SCLI3CHighDuration = 0x13;
-  hi3c1.Init.CtrlBusCharacteristic.SCLODLowDuration = 0x1e;
+  hi3c1.Init.CtrlBusCharacteristic.SCLPPLowDuration = 0x28;
+  hi3c1.Init.CtrlBusCharacteristic.SCLI3CHighDuration = 0x29;
+  hi3c1.Init.CtrlBusCharacteristic.SCLODLowDuration = 0x59;
   hi3c1.Init.CtrlBusCharacteristic.SCLI2CHighDuration = 0x00;
-  hi3c1.Init.CtrlBusCharacteristic.BusFreeDuration = 0x0d;
-  hi3c1.Init.CtrlBusCharacteristic.BusIdleDuration = 0x3e;
+  hi3c1.Init.CtrlBusCharacteristic.BusFreeDuration = 0x32;
+  hi3c1.Init.CtrlBusCharacteristic.BusIdleDuration = 0xf8;
   if (HAL_I3C_Init(&hi3c1) != HAL_OK)
   {
     Error_Handler();
