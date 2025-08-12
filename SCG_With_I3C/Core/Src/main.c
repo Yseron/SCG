@@ -95,15 +95,40 @@ int main(void)
   MX_GPIO_Init();
   MX_I3C1_Init();
   MX_ICACHE_Init();
-  /* USER CODE BEGIN 2 */
-  uint64_t TargetPayload = 0;
-  /* USER CODE END 2 */
 
   /* Initialize led */
   BSP_LED_Init(LED_GREEN);
 
   /* Initialize USER push-button, will be used to trigger an interrupt each time it's pressed.*/
   BSP_PB_Init(BUTTON_USER, BUTTON_MODE_EXTI);
+
+  /* USER CODE BEGIN 2 */
+  HAL_StatusTypeDef status = HAL_OK;
+  uint64_t TargetPayload[2] = {0,0};
+  uint8_t dynamic_adr[2] = {0x32,0x33};
+  uint8_t i = 0;
+
+  /* Wait for USER push-button press before starting the Communication */
+    while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_RESET)
+    {
+    }
+
+    /* Wait for USER push-button release before starting the Communication */
+    while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_SET)
+    {
+    }
+  do
+        {
+	  	  status = HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload[i], I3C_ONLY_ENTDAA, 5000);
+          if (status == HAL_BUSY)
+          {
+            status = HAL_I3C_Ctrl_SetDynAddr(&hi3c1, dynamic_adr[i]);
+            status = HAL_BUSY;
+          }
+          i++;
+        } while (status == HAL_BUSY);
+  /* USER CODE END 2 */
+
 
   /* Initialize COM1 port (115200, 8 bits (7-bit data + 1 stop bit), no parity */
   BspCOMInit.BaudRate   = 115200;
@@ -120,10 +145,6 @@ int main(void)
   /* USER CODE BEGIN WHILE */
   while (1)
   {
-	  HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);
-	  HAL_Delay(100);
-	  HAL_I3C_Ctrl_DynAddrAssign(&hi3c1, &TargetPayload, I3C_ONLY_ENTDAA, 5000);
-	  HAL_Delay(101);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
