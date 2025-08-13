@@ -108,6 +108,17 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_RESET){
+  }
+  /* Wait for USER push-button release before starting the Communication */
+  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_SET){
+  }
+  uint8_t spi_tx[2] = {0x75, 0x00};
+  uint8_t spi_rx[2] = {0x00, 0x00};
+  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
+  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)spi_tx, (uint8_t*)spi_rx, 2, 1000);
+  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
+  HAL_Delay(1000);
   while (1)
   {
 
