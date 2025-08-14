@@ -49,7 +49,6 @@ SPI_HandleTypeDef hspi1;
 
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
-void PeriphCommonClock_Config(void);
 static void MX_GPIO_Init(void);
 static void MX_SPI1_Init(void);
 static void MX_ICACHE_Init(void);
@@ -85,9 +84,6 @@ int main(void)
   /* Configure the system clock */
   SystemClock_Config();
 
-  /* Configure the peripherals common clocks */
-  PeriphCommonClock_Config();
-
   /* USER CODE BEGIN SysInit */
 
   /* USER CODE END SysInit */
@@ -97,6 +93,7 @@ int main(void)
   MX_SPI1_Init();
   MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
+  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
 
   /* USER CODE END 2 */
 
@@ -108,20 +105,21 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_RESET){
-  }
-  /* Wait for USER push-button release before starting the Communication */
-  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_SET){
-  }
-  uint8_t spi_tx[2] = {0x75, 0x00};
+  HAL_StatusTypeDef status = HAL_OK;
+  uint8_t spi_tx[2] = {0x75 | 0x80 , 0x00};
   uint8_t spi_rx[2] = {0x00, 0x00};
-  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
-  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)spi_tx, (uint8_t*)spi_rx, 2, 1000);
-  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
-  HAL_Delay(1000);
   while (1)
   {
-
+	  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_RESET){
+	  }
+	  /* Wait for USER push-button release before starting the Communication */
+	  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_SET){
+	  }
+	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
+	  status = HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)spi_tx, (uint8_t*)spi_rx, 2, 5000);
+	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
+	  spi_rx[1]=0;
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -140,7 +138,7 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE0);
+  __HAL_PWR_VOLTAGESCALING_CONFIG(PWR_REGULATOR_VOLTAGE_SCALE3);
 
   while(!__HAL_PWR_GET_FLAG(PWR_FLAG_VOSRDY)) {}
 
@@ -154,9 +152,9 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLL1_SOURCE_CSI;
   RCC_OscInitStruct.PLL.PLLM = 1;
-  RCC_OscInitStruct.PLL.PLLN = 125;
+  RCC_OscInitStruct.PLL.PLLN = 36;
   RCC_OscInitStruct.PLL.PLLP = 2;
-  RCC_OscInitStruct.PLL.PLLQ = 2;
+  RCC_OscInitStruct.PLL.PLLQ = 3;
   RCC_OscInitStruct.PLL.PLLR = 2;
   RCC_OscInitStruct.PLL.PLLRGE = RCC_PLL1_VCIRANGE_2;
   RCC_OscInitStruct.PLL.PLLVCOSEL = RCC_PLL1_VCORANGE_WIDE;
@@ -177,7 +175,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB3CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_5) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_3) != HAL_OK)
   {
     Error_Handler();
   }
@@ -188,25 +186,7 @@ void SystemClock_Config(void)
 
   /** Configure the programming delay
   */
-  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_2);
-}
-
-/**
-  * @brief Peripherals Common Clock Configuration
-  * @retval None
-  */
-void PeriphCommonClock_Config(void)
-{
-  RCC_PeriphCLKInitTypeDef PeriphClkInitStruct = {0};
-
-  /** Initializes the peripherals clock
-  */
-  PeriphClkInitStruct.PeriphClockSelection = RCC_PERIPHCLK_CKPER;
-  PeriphClkInitStruct.CkperClockSelection = RCC_CLKPSOURCE_HSI;
-  if (HAL_RCCEx_PeriphCLKConfig(&PeriphClkInitStruct) != HAL_OK)
-  {
-    Error_Handler();
-  }
+  __HAL_FLASH_SET_PROGRAM_DELAY(FLASH_PROGRAMMING_DELAY_1);
 }
 
 /**
@@ -260,7 +240,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_64;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_256;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -303,7 +283,7 @@ static void MX_GPIO_Init(void)
   __HAL_RCC_GPIOB_CLK_ENABLE();
 
   /*Configure GPIO pin Output Level */
-  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
 
   /*Configure GPIO pin : SPI1_CS_1_Pin */
   GPIO_InitStruct.Pin = SPI1_CS_1_Pin;
