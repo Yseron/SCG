@@ -94,7 +94,7 @@ int main(void)
   MX_SPI1_Init();
   MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
-  set_CS_startup();
+  SetCSStartup();
   /* USER CODE END 2 */
 
   /* Initialize led */
@@ -114,7 +114,7 @@ int main(void)
 	  /* Wait for USER push-button release before starting the Communication */
 	  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_SET){
 	  }
-	  setup_sensors(&hspi1);
+	  SetupSensors(&hspi1);
 	  /*HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
 	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)spi_tx, (uint8_t*)spi_rx, 2, 5000);
 	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);*/

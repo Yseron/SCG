@@ -33,10 +33,10 @@ const SensorCS sensorCSPin[NUM_SENSORS] = {
 uint8_t spi_rx[2] = {0x00, 0x00};
 
 //Functions
-HAL_StatusTypeDef setup_sensors(SPI_HandleTypeDef *hspi){
+HAL_StatusTypeDef SetupSensors(SPI_HandleTypeDef *hspi){
 	HAL_StatusTypeDef status = HAL_OK;
 	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-		HAL_StatusTypeDef status_inside = icm_42688_read_single(i, hspi, 0x75, (uint8_t*)spi_rx);
+		HAL_StatusTypeDef status_inside = ICM42688ReadSingle(i, hspi, 0x75, (uint8_t*)spi_rx);
 		if (status_inside != HAL_OK) {
 			status = HAL_ERROR;
 		}
@@ -44,7 +44,7 @@ HAL_StatusTypeDef setup_sensors(SPI_HandleTypeDef *hspi){
 	return status;
 }
 
-void set_CS_startup(){
+void SetCSStartup(){
 	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
 		HAL_GPIO_WritePin(sensorCSPin[i].Port, sensorCSPin[i].Pin, GPIO_PIN_SET);
 	}

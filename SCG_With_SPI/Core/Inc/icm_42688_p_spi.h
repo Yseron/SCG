@@ -16,7 +16,7 @@
 
 
 //Functions
-HAL_StatusTypeDef icm_42688_read_single(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t *pRxData);
-HAL_StatusTypeDef icm_42688_write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t data);
-HAL_StatusTypeDef icm_42688_setup(uint8_t sensorNumber);
+HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t *pRxData);
+HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t data);
+HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi);
 #endif /* INC_ICM_42688_P_SENSOR_H_ */

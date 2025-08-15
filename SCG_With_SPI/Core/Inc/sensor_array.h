@@ -24,6 +24,6 @@ extern uint8_t spi_rx[2];
 extern const SensorCS sensorCSPin[NUM_SENSORS];
 
 //Functions
-HAL_StatusTypeDef setup_sensors();
-void set_CS_startup();
+HAL_StatusTypeDef SetupSensors();
+void SetSCSStartup();
 #endif /* INC_SENSOR_ARRAY_H_ */
