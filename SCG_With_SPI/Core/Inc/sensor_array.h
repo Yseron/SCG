@@ -10,7 +10,7 @@
 #include "icm_42688_p_spi.h"
 #include "stm32h5xx_hal.h"
 
-//Defines etc.
+/************************* Defines etc. ************************/
 #define NUM_SENSORS 1
 
 typedef struct {
@@ -18,12 +18,12 @@ typedef struct {
     uint16_t Pin;
 } SensorCS;
 
-//Variables etc.
+/************************* Variables etc. ************************/
 extern uint8_t spi_rx[2];
 
 extern const SensorCS sensorCSPin[NUM_SENSORS];
 
-//Functions
+/************************* Functions ************************/
 HAL_StatusTypeDef SetupSensors();
-void SetSCSStartup();
+void SetCSStartup();
 #endif /* INC_SENSOR_ARRAY_H_ */

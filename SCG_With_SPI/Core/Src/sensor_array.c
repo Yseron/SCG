@@ -9,7 +9,7 @@
 #include "sensor_array.h"
 #include "stm32h5xx_hal.h"
 
-//Defines etc.
+/************************* Defines etc. ************************/
 const SensorCS sensorCSPin[NUM_SENSORS] = {
     {GPIOC, GPIO_PIN_1}, // SENSOR_0
     /*{GPIOA, GPIO_PIN_1}, // SENSOR_1
@@ -28,11 +28,15 @@ const SensorCS sensorCSPin[NUM_SENSORS] = {
     {GPIOD, GPIO_PIN_2}, // SENSOR_14
     {GPIOD, GPIO_PIN_3}  // SENSOR_15*/
 };
-
-//Variables
+/************************* Variables etc. ************************/
 uint8_t spi_rx[2] = {0x00, 0x00};
 
-//Functions
+/************************* Functions ************************/
+/**
+  * @brief  sets up all sensor for SPI communication with CLKIN for a specific ODR & full scale range. sensorCSPin has to be setup first
+  * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+  * @retval HAL status
+  */
 HAL_StatusTypeDef SetupSensors(SPI_HandleTypeDef *hspi){
 	HAL_StatusTypeDef status = HAL_OK;
 	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
@@ -44,6 +48,11 @@ HAL_StatusTypeDef SetupSensors(SPI_HandleTypeDef *hspi){
 	return status;
 }
 
+/**
+  * @brief  set all CS pins to high. They have to be initialized as low, so the sensor doesn't start in I2C/I3C mode
+  * @param  none
+  * @retval none
+  */
 void SetCSStartup(){
 	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
 		HAL_GPIO_WritePin(sensorCSPin[i].Port, sensorCSPin[i].Pin, GPIO_PIN_SET);
