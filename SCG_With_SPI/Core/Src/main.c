@@ -94,7 +94,8 @@ int main(void)
   MX_SPI1_Init();
   MX_ICACHE_Init();
   /* USER CODE BEGIN 2 */
-  SetCSStartup();
+  //SetCSStartup();
+  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Initialize led */
@@ -105,8 +106,8 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  //const uint8_t spi_tx[2] = {0x75 | 0x80 , 0x00};
-  //uint8_t spi_rx[2] = {0x00, 0x00};
+  const uint8_t spi_tx_test[2] = {0x75 | 0x80 , 0x00};
+  uint8_t spi_rx_test[2] = {0x00, 0x00};
   while (1)
   {
 	  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_RESET){
@@ -114,11 +115,11 @@ int main(void)
 	  /* Wait for USER push-button release before starting the Communication */
 	  while (BSP_PB_GetState(BUTTON_USER) != GPIO_PIN_SET){
 	  }
-	  SetupSensors(&hspi1);
-	  /*HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
-	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)spi_tx, (uint8_t*)spi_rx, 2, 5000);
-	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);*/
-	  spi_rx[1]=0;
+	  //SetupSensors(&hspi1);
+	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
+	  HAL_SPI_TransmitReceive(&hspi1, (uint8_t*)spi_tx_test, (uint8_t*)spi_rx_test, 2, 5000);
+	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
+	  spi_rx_test[1]=0;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -248,7 +249,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
   hspi1.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
   hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
-  hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_02CYCLE;
+  hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_05CYCLE;
   hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
   hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
   hspi1.Init.IOSwap = SPI_IO_SWAP_DISABLE;

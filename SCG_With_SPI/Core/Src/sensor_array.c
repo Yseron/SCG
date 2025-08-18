@@ -40,7 +40,33 @@ uint8_t spi_rx[2] = {0x00, 0x00};
 HAL_StatusTypeDef SetupSensors(SPI_HandleTypeDef *hspi){
 	HAL_StatusTypeDef status = HAL_OK;
 	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-		HAL_StatusTypeDef status_inside = ICM42688ReadSingle(i, hspi, 0x75, (uint8_t*)spi_rx);
+		HAL_StatusTypeDef status_inside = ICM42688Setup(i, hspi);
+		if (status_inside != HAL_OK) {
+			status = HAL_ERROR;
+		}
+	}
+	return status;
+}
+
+HAL_StatusTypeDef ReadIMUs(SPI_HandleTypeDef *hspi, uint8_t *pRxData){
+	for (uint8_t currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
+		HAL_StatusTypeDef status = ICM42688ReadIMUs(currentSensor, hspi, (uint8_t*)pRxData);
+		if (status == HAL_ERROR) {
+			return HAL_ERROR;
+		}
+	}
+	return HAL_OK;
+}
+
+/**
+  * @brief  reads WhoAmI register of all sensors. TODO: implement save location for read data
+  * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+  * @retval HAL status
+  */
+HAL_StatusTypeDef CheckWhoAmI(SPI_HandleTypeDef *hspi){
+	HAL_StatusTypeDef status = HAL_OK;
+	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
+		HAL_StatusTypeDef status_inside = ICM42688CheckWhoAmI(i, hspi);
 		if (status_inside != HAL_OK) {
 			status = HAL_ERROR;
 		}

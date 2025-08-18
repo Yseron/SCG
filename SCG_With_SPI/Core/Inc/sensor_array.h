@@ -26,4 +26,6 @@ extern const SensorCS sensorCSPin[NUM_SENSORS];
 /************************* Functions ************************/
 HAL_StatusTypeDef SetupSensors();
 void SetCSStartup();
+HAL_StatusTypeDef CheckWhoAmI(SPI_HandleTypeDef *hspi);
+HAL_StatusTypeDef ReadIMUs(SPI_HandleTypeDef *hspi, uint8_t *pRxData);
 #endif /* INC_SENSOR_ARRAY_H_ */

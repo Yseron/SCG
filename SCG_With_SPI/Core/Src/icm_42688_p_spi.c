@@ -9,6 +9,9 @@
 #include "sensor_array.h"
 
 /************************* Defines etc. ************************/
+#define DISABLE_CLKIN 1 // 1 to disable CLKIN, 0 to enable CLKIN
+#define DISABLE_FIFO 1 // 1 to disable FIFO, 0 to enable FIFO
+
 //Register Banks
 #define REG_BANK_SEL 				0x76		//Register for selecting register bank
 #define REGISTER_BANK_0 			(0 << 0)
@@ -41,7 +44,7 @@
 
 //Bank 1
 #define INTF_CONFIG5				0x7B
-	#define PIN9_FUNCTION				(2 << 1)//Pin 9 functions as Clock Input
+	#define PIN9_FUNCTION_CLKIN		(2 << 1)	//Pin 9 functions as Clock Input
 
 /************************* Variables etc. ************************/
 
@@ -59,6 +62,14 @@ HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hs
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
 	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, (uint8_t*)TxData, (uint8_t*)pRxData, 2, 1000); //read 1 byte from register
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to high
+	return status;
+}
+
+HAL_StatusTypeDef ICM42688ReadIMUs(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
+	static const uint8_t TxData[13] = {ACCEL_DATA_X1 | 0x80, 0}; // set Tx register and set first bit to 1(read)
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, (uint8_t*)TxData, (uint8_t*)pRxData, 13, 1000); //read 1 byte from register
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
 	return status;
 }
 
@@ -86,5 +97,44 @@ HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, u
   * @retval HAL status
   */
 HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
+	if(ICM42688Write(sensorNumber, hspi, DRIVE_CONFIG, SPI_SLEW_RATE) != HAL_OK){
+		return HAL_ERROR;
+	}
+	if(ICM42688Write(sensorNumber, hspi, GYRO_CONFIG0, GYRO_FS_SEL_15_625 | GYRO_ODR_12_5) != HAL_OK){
+			return HAL_ERROR;
+	}
+	if(ICM42688Write(sensorNumber, hspi, ACCEL_CONFIG0, ACCEL_FS_SEL_2 | ACCEL_ODR_12_5) != HAL_OK){
+			return HAL_ERROR;
+	}
+	if(DISABLE_CLKIN){ //Skips setup of CLKIN if define is set to 1
+		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG1, INTF_CONFIG1_RESERVED | RTC_MODE | CLKSEL) != HAL_OK){
+				return HAL_ERROR;
+		}
+		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_1) != HAL_OK){
+				return HAL_ERROR;
+		}
+		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG5, PIN9_FUNCTION_CLKIN) != HAL_OK){
+				return HAL_ERROR;
+		}
+		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_0) != HAL_OK){
+						return HAL_ERROR;
+		}
+	}
+	if(DISABLE_FIFO){
+
+	}
+	return HAL_OK;
+}
+
+/**
+  * @brief  reads WhoAmI register of a sensor
+  * @param  sensorNumber: number of sensor up to NUM_SENSORS. sensorCSPin has to be setup first
+  * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+  * @retval HAL status
+  */
+HAL_StatusTypeDef ICM42688CheckWhoAmI(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
+	if(ICM42688ReadSingle(sensorNumber, hspi, WHO_AM_I, spi_rx) != HAL_OK){
+		return HAL_ERROR;
+	}
 	return HAL_OK;
 }
