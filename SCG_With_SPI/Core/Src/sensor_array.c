@@ -29,7 +29,7 @@ const SensorCS sensorCSPin[NUM_SENSORS] = {
     {GPIOD, GPIO_PIN_3}  // SENSOR_15*/
 };
 /************************* Variables etc. ************************/
-uint8_t spi_rx[2] = {0x00, 0x00};
+uint8_t spi_rx_single[2] = {0x00, 0x00};
 
 /************************* Functions ************************/
 /**

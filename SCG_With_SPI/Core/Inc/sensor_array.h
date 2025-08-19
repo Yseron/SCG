@@ -11,7 +11,7 @@
 #include "stm32h5xx_hal.h"
 
 /************************* Defines etc. ************************/
-#define NUM_SENSORS 1
+#define NUM_SENSORS 		1
 
 typedef struct {
     GPIO_TypeDef *Port;
@@ -19,7 +19,7 @@ typedef struct {
 } SensorCS;
 
 /************************* Variables etc. ************************/
-extern uint8_t spi_rx[2];
+extern uint8_t spi_rx_single[2];
 
 extern const SensorCS sensorCSPin[NUM_SENSORS];
 

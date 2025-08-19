@@ -10,7 +10,8 @@
 #include "stm32h5xx_hal.h"
 
 /************************* Defines etc. ************************/
-
+#define FIFO_PACKET_SIZE 	16
+#define FIFO_MAX_SIZE		2048
 
 /************************* Variables etc. ************************/
 
