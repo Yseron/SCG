@@ -289,7 +289,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = SPI1_CS_1_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_MEDIUM;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(SPI1_CS_1_GPIO_Port, &GPIO_InitStruct);
 
   /*Configure GPIO pins : T_VCP_RX_Pin T_VCP_TX_Pin */

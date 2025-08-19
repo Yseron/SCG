@@ -38,6 +38,10 @@
 	#define INTF_CONFIG1_RESERVED		(9 << 4)	//Reserved set to reset value(probably irrelevant, default)
 	#define RTC_MODE					(1 << 2)	//RTC clock input required
 	#define CLKSEL 						(1 << 0)	//Select PLL if available(default)
+#define PWR_MGMT0						0x4E
+	#define IDLE						(1 << 4)	//Activates idle mode
+	#define GYRO_MODE_LOW_NOISE			(3 << 2)	//Sets gyro to low noise mode
+	#define ACCEL_MODE_LOW_NOISE		(3 << 0)	//Sets accel to low noise mode
 #define GYRO_CONFIG0 					0x4F
 	#define GYRO_FS_SEL_15_625 			(7 << 5)	//Gyro max dps +-15.625
 	#define GYRO_ODR_1000 				(6 << 0)	//Gyro ODR 1kHz
@@ -144,6 +148,10 @@ HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, u
   * @retval HAL status
   */
 HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
+	if(ICM42688Write(sensorNumber, hspi, PWR_MGMT0, IDLE | GYRO_MODE_LOW_NOISE | ACCEL_MODE_LOW_NOISE) != HAL_OK){
+		return HAL_ERROR;
+	}
+	HAL_Delay(1);
 	if(ICM42688Write(sensorNumber, hspi, DRIVE_CONFIG, SPI_SLEW_RATE) != HAL_OK){
 		return HAL_ERROR;
 	}
