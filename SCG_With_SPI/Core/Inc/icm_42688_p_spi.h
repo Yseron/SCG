@@ -15,7 +15,6 @@
 
 /************************* Variables etc. ************************/
 
-
 /************************* Functions ************************/
 HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t *pRxData);
 HAL_StatusTypeDef ICM42688ReadIMUs(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData);
