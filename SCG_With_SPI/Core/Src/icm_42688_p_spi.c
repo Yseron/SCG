@@ -107,7 +107,7 @@ HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hs
   * @param  pRxData: pointer to reception data buffer
   * @retval HAL status
   */
-HAL_StatusTypeDef ICM42688ReadIMUs(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
+HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
 	const uint8_t TxData[13] = {ACCEL_DATA_X1 | 0x80, 0}; // set Tx register and set first bit to 1(read)
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
 	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, (uint8_t*)TxData, (uint8_t*)pRxData, 13, 1000); //read 1 byte from register
@@ -115,24 +115,63 @@ HAL_StatusTypeDef ICM42688ReadIMUs(uint8_t sensorNumber, SPI_HandleTypeDef *hspi
 	return status;
 }
 
-HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
-	uint8_t BytesInFIFO[2] = {0, 0};
-	ICM42688ReadSingle(sensorNumber, hspi, FIFO_COUNTL, (uint8_t*)BytesInFIFO);
-	if (16 * BytesInFIFO[1] <= (FIFO_MAX_SIZE - FIFO_PACKET_SIZE)){
+/**
+  * @brief  read the current FIFO content and modifies it and saves it to dataBuffer at position dataBufferPosition
+  * @param  sensorNumber: number of sensor up to NUM_SENSORS. sensorCSPin has to be setup first
+  * @param  hspi: pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+  * @param  dataBuffer: array in which the FIFO is saved
+  * @param	dataBufferPosition: position where the data should be saved in dataBuffer
+  * @retval HAL status
+  */
+HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *dataBuffer, uint16_t *dataBufferPosition){
+	//Read number of packets in FIFO
+	uint8_t PacketsInFIFO[2] = {0, 0};
+	ICM42688ReadSingle(sensorNumber, hspi, FIFO_COUNTL, (uint8_t*)PacketsInFIFO);
+	//Check if
+	if (16 * PacketsInFIFO[1] > (FIFO_MAX_SIZE - FIFO_PACKET_SIZE)){
 		return HAL_ERROR;
-	}else if (BytesInFIFO[1] != 0) {
-		uint16_t BytesToRead = 16 * BytesInFIFO[1] + 1;
+	}else if (PacketsInFIFO[1] != 0) {
+		//Enough space in dataBuffer
+		if (*dataBufferPosition + (PacketsInFIFO[1] * FIFO_PACKET_SIZE_MODIFIED) < DATA_BUFFER_MAX_PACKAGES * FIFO_PACKET_SIZE_MODIFIED){
+			return HAL_ERROR;
+		}
 		const uint8_t TxFIFO[FIFO_PACKET_SIZE  + 1] = {FIFO_DATA | 0x80};
-		for (int i = 0; i < BytesInFIFO[1]; i++) {
+		uint8_t	RxFIFO[FIFO_PACKET_SIZE  + 1];
+		for (int i = 0; i < PacketsInFIFO[1]; i++) {
 			HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-			HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, (uint8_t*)TxFIFO, (uint8_t*)RxFIFO, BytesToRead, 1000); //read all bytes from FIFO_DATA register
+			HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, (uint8_t*)TxFIFO, (uint8_t*)RxFIFO, FIFO_PACKET_SIZE + 1, 1000); //read 1 package from FIFO_DATA register
 			HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
 			if (status != HAL_OK) {
 				return HAL_ERROR;
 			}
+			//Modifies read data and saves it to dataBuffer
+			//New packet: 	1 byte sensor number
+			//				6 bytes accel data
+			//				6 bytes gyro data
+			//				2 bytes timestamp
+			//Header
+			dataBuffer[*dataBufferPosition] = sensorNumber;
+			//Accel
+			dataBuffer[*dataBufferPosition + 1] = RxFIFO[2];
+			dataBuffer[*dataBufferPosition + 2] = RxFIFO[3];
+			dataBuffer[*dataBufferPosition + 3] = RxFIFO[4];
+			dataBuffer[*dataBufferPosition + 4] = RxFIFO[5];
+			dataBuffer[*dataBufferPosition + 5] = RxFIFO[6];
+			dataBuffer[*dataBufferPosition + 6] = RxFIFO[7];
+			//Gyro
+			dataBuffer[*dataBufferPosition + 7] = RxFIFO[8];
+			dataBuffer[*dataBufferPosition + 8] = RxFIFO[9];
+			dataBuffer[*dataBufferPosition + 9] = RxFIFO[10];
+			dataBuffer[*dataBufferPosition + 10] = RxFIFO[11];
+			dataBuffer[*dataBufferPosition + 11] = RxFIFO[12];
+			dataBuffer[*dataBufferPosition + 12] = RxFIFO[13];
+			//Timestamp
+			dataBuffer[*dataBufferPosition + 13] = RxFIFO[15];
+			dataBuffer[*dataBufferPosition + 14] = RxFIFO[16];
 
+			//Moves dataBufferPosition by 1 new packet
+			*dataBufferPosition += FIFO_PACKET_SIZE_MODIFIED;
 		}
-TODO:
 	}
 	return HAL_OK;
 }

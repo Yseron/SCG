@@ -11,7 +11,8 @@
 #include "stm32h5xx_hal.h"
 
 /************************* Defines etc. ************************/
-#define NUM_SENSORS 		1
+#define NUM_SENSORS 				1
+#define DATA_BUFFER_MAX_PACKAGES	1000
 
 typedef struct {
     GPIO_TypeDef *Port;
@@ -25,7 +26,8 @@ extern const SensorCS sensorCSPin[NUM_SENSORS];
 
 /************************* Functions ************************/
 HAL_StatusTypeDef SetupSensors();
-void SetCSStartup();
 HAL_StatusTypeDef CheckWhoAmI(SPI_HandleTypeDef *hspi);
-HAL_StatusTypeDef ReadIMUs(SPI_HandleTypeDef *hspi, uint8_t *pRxData);
+HAL_StatusTypeDef ReadFIFOs(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer);
+void SetCSStartup();
+
 #endif /* INC_SENSOR_ARRAY_H_ */

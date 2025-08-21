@@ -45,6 +45,7 @@
 SPI_HandleTypeDef hspi1;
 
 /* USER CODE BEGIN PV */
+uint8_t dataBuffer[FIFO_PACKET_SIZE_MODIFIED * DATA_BUFFER_MAX_PACKAGES];
 
 /* USER CODE END PV */
 
