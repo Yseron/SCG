@@ -21,7 +21,8 @@
 
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
-
+#include "icm_42688_p_spi.h"
+#include "sensor_array.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -45,7 +46,7 @@ SPI_HandleTypeDef hspi1;
 UART_HandleTypeDef huart2;
 
 /* USER CODE BEGIN PV */
-
+uint8_t dataBuffer[FIFO_PACKET_SIZE_MODIFIED * DATA_BUFFER_MAX_PACKAGES];
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -94,13 +95,46 @@ int main(void)
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
+  uint8_t text[8] = "Value:\n\r";
+  uint8_t newline[2] = "\n\r";
+  const uint8_t spi_tx_test[2] = {0x75 | 0x80 , 0x00};
+  uint8_t spi_rx_test[2] = {0x00, 0x00};
+//  const uint8_t spi_tx_test = 0x75 | 0x80;
+//  uint8_t spi_rx_test;
+  uint8_t who_am_i = 0;
+
   while (1)
   {
+	  uint8_t tx_data = 0x75 | 0x80;
+
+//	  SetupSensors(&hspi1);
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET); /* Pin selection can be done in main.c */
+//	  HAL_SPI_TransmitReceive(&hspi1, spi_tx_test, spi_rx_test, 2, 1000);
+	    if(HAL_SPI_Transmit(&hspi1, &tx_data, 1, 1000) != HAL_OK) {
+	        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+	    }
+	    if(HAL_SPI_Receive(&hspi1, &who_am_i, 1, 1000) != HAL_OK) {
+	        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+	    }
+	    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+//	  HAL_SPI_Transmit(&hspi1, &spi_tx_test, 1, 5000);
+//	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
+//	  HAL_SPI_Transmit(&hspi1, &spi_tx_test, 1, 5000);
+//	  HAL_Delay(1);
+//	  HAL_SPI_Receive(&hspi1, &spi_rx_test, 1, 5000);
+//	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
+
+	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
+	  HAL_UART_Transmit(&huart2, text, 8, 1000);
+	  HAL_UART_Transmit(&huart2, &who_am_i, 1, 1000);
+	  HAL_UART_Transmit(&huart2, newline, 2, 1000);
+	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
