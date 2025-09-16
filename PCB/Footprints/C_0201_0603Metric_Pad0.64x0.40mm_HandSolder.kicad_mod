@@ -1,0 +1,169 @@
+(footprint "C_0201_0603Metric_Pad0.64x0.40mm_HandSolder"
+	(version 20241229)
+	(generator "pcbnew")
+	(generator_version "9.0")
+	(layer "F.Cu")
+	(descr "Capacitor SMD 0201 (0603 Metric), square (rectangular) end terminal, IPC-7351 nominal with elongated pad for handsoldering. (Body size source: https://www.vishay.com/docs/20052/crcw0201e3.pdf), generated with kicad-footprint-generator")
+	(tags "capacitor handsolder")
+	(property "Reference" "REF**"
+		(at 0 -1.05 0)
+		(layer "F.SilkS")
+		(uuid "22525278-e402-4357-9acd-3d8cef2fd04e")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "C_0201_0603Metric_Pad0.64x0.40mm_HandSolder"
+		(at 0 1.05 0)
+		(layer "F.Fab")
+		(uuid "d6664dab-168e-4fe4-a205-f6dd5922ee0f")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "c2b2baa3-8768-4280-9826-8b17e162d847")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" ""
+		(at 0 0 0)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "9426dec4-6e14-4cbc-b1e1-6fe001929649")
+		(effects
+			(font
+				(size 1.27 1.27)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr smd)
+	(fp_poly
+		(pts
+			(xy 0.725 -0.2) (xy -0.725 -0.2) (xy -0.725 0.2) (xy 0.725 0.2)
+		)
+		(stroke
+			(width 0.5)
+			(type solid)
+		)
+		(fill yes)
+		(layer "F.Mask")
+		(uuid "3a1f7f31-2adf-4586-bfa8-8efe664fc70c")
+	)
+	(fp_rect
+		(start -0.88 -0.8)
+		(end 0.88 0.8)
+		(stroke
+			(width 0.05)
+			(type default)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "c693954a-40dc-4995-87b7-d81af94fa283")
+	)
+	(fp_line
+		(start -0.3 -0.15)
+		(end 0.3 -0.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "940abaf0-f7c2-48c9-a771-631fd29ba9a5")
+	)
+	(fp_line
+		(start -0.3 0.15)
+		(end -0.3 -0.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "9b8799ce-6cb6-4cd1-842e-9d4194ca1225")
+	)
+	(fp_line
+		(start 0.3 -0.15)
+		(end 0.3 0.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "4ef517f9-3ca3-4062-8eee-09a78ce4cbb2")
+	)
+	(fp_line
+		(start 0.3 0.15)
+		(end -0.3 0.15)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(layer "F.Fab")
+		(uuid "c297b3a4-ac4b-4a03-8b18-4f054d5bdf8e")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 0 -0.68 0)
+		(layer "F.Fab")
+		(uuid "18eabd3c-8658-4f20-b8d8-a7d5bf972104")
+		(effects
+			(font
+				(size 0.25 0.25)
+				(thickness 0.04)
+			)
+		)
+	)
+	(pad "" smd roundrect
+		(at -0.4325 0)
+		(size 0.458 0.36)
+		(layers "F.Paste")
+		(roundrect_rratio 0.25)
+		(uuid "f8929e86-293f-4f9f-954c-7b61aa3b7a9c")
+	)
+	(pad "" smd roundrect
+		(at 0.4325 0)
+		(size 0.458 0.36)
+		(layers "F.Paste")
+		(roundrect_rratio 0.25)
+		(uuid "acb8404f-4894-4fad-887e-a4cf56f300d0")
+	)
+	(pad "1" smd roundrect
+		(at -0.4075 0)
+		(size 0.635 1.3)
+		(layers "F.Cu" "F.Mask")
+		(roundrect_rratio 0.25)
+		(uuid "6347b7af-383b-4754-b033-348a5b11592a")
+	)
+	(pad "2" smd roundrect
+		(at 0.4075 0)
+		(size 0.635 1.3)
+		(layers "F.Cu" "F.Mask")
+		(roundrect_rratio 0.25)
+		(uuid "85b610e4-19c5-4338-8ff6-57e08ea331c7")
+	)
+	(embedded_fonts no)
+	(model "${KICAD9_3DMODEL_DIR}/Capacitor_SMD.3dshapes/C_0201_0603Metric.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)
