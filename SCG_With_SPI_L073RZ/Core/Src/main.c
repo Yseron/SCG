@@ -107,28 +107,33 @@ int main(void)
 //  uint8_t dataBuffer[260 * NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
 //  uint16_t dataBufferCtrl[NUM_SENSORS + 2] = {0};
   uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
-  uint8_t size = 6;
+  uint8_t size = 16;
   uint8_t text[] = "Value: ";
   uint8_t newline[] = "\r\n";
   uint8_t multiple[size];
-  uint8_t test[13] = {
+  uint8_t readyData[] = "          |                                                            \r\n";
+  uint8_t test[15] = {
 	  0x0D,
       0x40, 0x00,
       0xC0, 0x00,
       0x20, 0x00,
       0x08, 0x21,
       0xF7, 0xDF,
-      0x41, 0x88
+      0x41, 0x88,
+	  0x12, 0x34
   };
 
   uartSetup(&huart2);
-  //uartSendSensorData(&huart2, test);
+
+
+  volatile HAL_StatusTypeDef status = SetupSensors(&hspi1);
   while (1)
   {
-//	  SetupSensors(&hspi1);
-//	  ICM42688ReadIMU(0, &hspi1, multiple);
+	  ICM42688ReadIMU(0, &hspi1, test + 1);
+	  uartSendSensorData(&huart2, test, readyData);
+	  HAL_UART_Transmit(&huart2, readyData, sizeof(readyData), 1000);
 //	  ICM42688Write(0, &hspi1, 0x14, 0x33);
-//	  ICM42688ReadSingle(0, &hspi1, 0x4D, multiple);
+//	  ICM42688ReadSingle(0, &hspi1, 0x75, multiple);
 //	  HAL_StatusTypeDef status = ICM42688Setup(0, &hspi1);
 //	  status = HAL_OK;
 //	  for (int i = 0; i < size; i++) {
@@ -138,14 +143,13 @@ int main(void)
 //	          }
 //	          multiple[i] = '0' + first_digit;  // overwrite with ASCII
 //	      }
-
 //	  HAL_UART_Transmit(&huart2, text, sizeof(text), 1000);
 //	  HAL_UART_Transmit(&huart2, multiple, size, 1000);
 //	  HAL_UART_Transmit(&huart2, newline, sizeof(newline), 1000);
 //	  for (int i = 0; i < size; i++) {
 //	      multiple[i] = 0;
 //	  }
-	  HAL_Delay(1000);
+	  HAL_Delay(100);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */

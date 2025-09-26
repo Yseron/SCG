@@ -10,9 +10,9 @@
 
 /************************* Defines etc. ************************/
 //Debug
-#define DISABLE_CLKIN 1 		 // 1 to disable CLKIN, 0 to enable CLKIN
-#define DISABLE_FIFO 1 			 // 1 to disable FIFO, 0 to enable FIFO
-#define DISABLE_FILTER 1		 // 1 to disable Filters, 0 to enable Filters
+#define ENABLE_CLKIN 0 		 // 1 to disable CLKIN, 0 to enable CLKIN
+#define ENABLE_FIFO 0 			 // 1 to disable FIFO, 0 to enable FIFO
+#define ENABLE_FILTER 0		 // 1 to disable Filters, 0 to enable Filters
 #define DISABLE_WRITE_CHECK	0	 // 1 to disable read on just written register, checking if value is equal
 
 //Register Banks
@@ -111,11 +111,11 @@ HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hs
   * @retval HAL status
   */
 HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
-	const uint8_t TxData = 0x4C | 0x80; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
+	const uint8_t TxData = ACCEL_DATA_X1 | 0x80; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
 	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &TxData, 1, 1000); //read 1 byte from register
 	if (status == HAL_OK) {
-			status = HAL_SPI_Receive(hspi, (uint8_t*)pRxData, 6, 1000); //receive bytes from register
+			status = HAL_SPI_Receive(hspi, (uint8_t*)pRxData, 12, 1000); //receive bytes from register
 		}
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
 	return status;
@@ -289,16 +289,19 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ICM42688Write(sensorNumber, hspi, DRIVE_CONFIG, SPI_SLEW_RATE) != HAL_OK){
+	if(ICM42688Write(sensorNumber, hspi, DRIVE_CONFIG, 0x02) != HAL_OK){ //?????????????????????????????????????????????? TODO: fix
 		return HAL_ERROR;
 	}
+	HAL_Delay(1);
 	if(ICM42688Write(sensorNumber, hspi, GYRO_CONFIG0, GYRO_FS_SEL_15_625 | GYRO_ODR_12_5) != HAL_OK){
 		return HAL_ERROR;
 	}
+	HAL_Delay(1);
 	if(ICM42688Write(sensorNumber, hspi, ACCEL_CONFIG0, ACCEL_FS_SEL_2 | ACCEL_ODR_12_5) != HAL_OK){
 		return HAL_ERROR;
 	}
-	if(DISABLE_CLKIN){ //Skips setup of CLKIN if define is set to 1
+	HAL_Delay(1);
+	if(ENABLE_CLKIN){ //Skips setup of CLKIN if define is set to 1
 		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG1, INTF_CONFIG1_RESERVED | RTC_MODE | CLKSEL) != HAL_OK){
 			return HAL_ERROR;
 		}
@@ -312,7 +315,7 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 			return HAL_ERROR;
 		}
 	}
-	if(DISABLE_FIFO){ // Skips setup of FIFO if set to 1
+	if(ENABLE_FIFO){ // Skips setup of FIFO if set to 1
 		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG0, FIFO_COUNT_REC_RECORDS | FIFO_COUNT_ENDIAN_BIG | SENSOR_DATA_ENDIAN_BIG) != HAL_OK){
 			return HAL_ERROR;
 		}
@@ -326,7 +329,7 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 			return HAL_ERROR;
 		}
 	}
-	if(DISABLE_FILTER){ //Disables filters
+	if(ENABLE_FILTER){ //Disables filters
 		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_1) != HAL_OK){
 			return HAL_ERROR;
 		}
