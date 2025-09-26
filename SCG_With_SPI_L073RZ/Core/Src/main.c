@@ -23,6 +23,7 @@
 /* USER CODE BEGIN Includes */
 #include "icm_42688_p_spi.h"
 #include "sensor_array.h"
+#include "uart.h"
 /* USER CODE END Includes */
 
 /* Private typedef -----------------------------------------------------------*/
@@ -44,6 +45,7 @@
 SPI_HandleTypeDef hspi1;
 
 UART_HandleTypeDef huart2;
+DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
 uint8_t dataBuffer[FIFO_PACKET_SIZE_MODIFIED * DATA_BUFFER_MAX_PACKAGES];
@@ -52,6 +54,7 @@ uint8_t dataBuffer[FIFO_PACKET_SIZE_MODIFIED * DATA_BUFFER_MAX_PACKAGES];
 /* Private function prototypes -----------------------------------------------*/
 void SystemClock_Config(void);
 static void MX_GPIO_Init(void);
+static void MX_DMA_Init(void);
 static void MX_USART2_UART_Init(void);
 static void MX_SPI1_Init(void);
 /* USER CODE BEGIN PFP */
@@ -92,48 +95,56 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_USART2_UART_Init();
   MX_SPI1_Init();
   /* USER CODE BEGIN 2 */
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
-  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_5, GPIO_PIN_SET);
+  SetCSStartup();
   /* USER CODE END 2 */
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-  uint8_t text[8] = "Value:\n\r";
-  uint8_t newline[2] = "\n\r";
-  const uint8_t spi_tx_test[2] = {0x75 | 0x80 , 0x00};
-  uint8_t spi_rx_test[2] = {0x00, 0x00};
-//  const uint8_t spi_tx_test = 0x75 | 0x80;
-//  uint8_t spi_rx_test;
-  uint8_t who_am_i = 0;
+//  uint8_t dataBuffer[260 * NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
+//  uint16_t dataBufferCtrl[NUM_SENSORS + 2] = {0};
+  uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
+  uint8_t size = 6;
+  uint8_t text[] = "Value: ";
+  uint8_t newline[] = "\r\n";
+  uint8_t multiple[size];
+  uint8_t test[13] = {
+	  0x0D,
+      0x40, 0x00,
+      0xC0, 0x00,
+      0x20, 0x00,
+      0x08, 0x21,
+      0xF7, 0xDF,
+      0x41, 0x88
+  };
 
+  uartSetup(&huart2);
+  //uartSendSensorData(&huart2, test);
   while (1)
   {
-	  uint8_t tx_data = 0x75 | 0x80;
-
 //	  SetupSensors(&hspi1);
-	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET); /* Pin selection can be done in main.c */
-//	  HAL_SPI_TransmitReceive(&hspi1, spi_tx_test, spi_rx_test, 2, 1000);
-	    if(HAL_SPI_Transmit(&hspi1, &tx_data, 1, 1000) != HAL_OK) {
-	        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-	    }
-	    if(HAL_SPI_Receive(&hspi1, &who_am_i, 1, 1000) != HAL_OK) {
-	        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-	    }
-	    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-//	  HAL_SPI_Transmit(&hspi1, &spi_tx_test, 1, 5000);
-//	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
-//	  HAL_SPI_Transmit(&hspi1, &spi_tx_test, 1, 5000);
-//	  HAL_Delay(1);
-//	  HAL_SPI_Receive(&hspi1, &spi_rx_test, 1, 5000);
-//	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_SET);
+//	  ICM42688ReadIMU(0, &hspi1, multiple);
+//	  ICM42688Write(0, &hspi1, 0x14, 0x33);
+//	  ICM42688ReadSingle(0, &hspi1, 0x4D, multiple);
+//	  HAL_StatusTypeDef status = ICM42688Setup(0, &hspi1);
+//	  status = HAL_OK;
+//	  for (int i = 0; i < size; i++) {
+//	          uint8_t first_digit = multiple[i];
+//	          while (first_digit >= 10) {
+//	              first_digit /= 10;  // get first digit
+//	          }
+//	          multiple[i] = '0' + first_digit;  // overwrite with ASCII
+//	      }
 
-	HAL_GPIO_WritePin(LD2_GPIO_Port, LD2_Pin, GPIO_PIN_SET);
-	  HAL_UART_Transmit(&huart2, text, 8, 1000);
-	  HAL_UART_Transmit(&huart2, &who_am_i, 1, 1000);
-	  HAL_UART_Transmit(&huart2, newline, 2, 1000);
+//	  HAL_UART_Transmit(&huart2, text, sizeof(text), 1000);
+//	  HAL_UART_Transmit(&huart2, multiple, size, 1000);
+//	  HAL_UART_Transmit(&huart2, newline, sizeof(newline), 1000);
+//	  for (int i = 0; i < size; i++) {
+//	      multiple[i] = 0;
+//	  }
 	  HAL_Delay(1000);
     /* USER CODE END WHILE */
 
@@ -221,7 +232,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -268,6 +279,22 @@ static void MX_USART2_UART_Init(void)
   /* USER CODE BEGIN USART2_Init 2 */
 
   /* USER CODE END USART2_Init 2 */
+
+}
+
+/**
+  * Enable DMA controller clock
+  */
+static void MX_DMA_Init(void)
+{
+
+  /* DMA controller clock enable */
+  __HAL_RCC_DMA1_CLK_ENABLE();
+
+  /* DMA interrupt init */
+  /* DMA1_Channel4_5_6_7_IRQn interrupt configuration */
+  HAL_NVIC_SetPriority(DMA1_Channel4_5_6_7_IRQn, 0, 0);
+  HAL_NVIC_EnableIRQ(DMA1_Channel4_5_6_7_IRQn);
 
 }
 

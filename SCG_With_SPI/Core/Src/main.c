@@ -126,13 +126,9 @@ int main(void)
 //	  SetupSensors(&hspi1);
 	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_RESET); /* Pin selection can be done in main.c */
 //	  HAL_SPI_TransmitReceive(&hspi1, spi_tx_test, spi_rx_test, 2, 1000);
-	    if(HAL_SPI_Transmit(&hspi1, &tx_data, 1, 1000) != HAL_OK) {
-	        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-	    }
-	    if(HAL_SPI_Receive(&hspi1, &who_am_i, 1, 1000) != HAL_OK) {
-	        HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
-	    }
-	    HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
+	  HAL_SPI_Transmit(&hspi1, &tx_data, 1, 1000);
+	  HAL_SPI_Receive(&hspi1, &who_am_i, 1, 1000);
+	  HAL_GPIO_WritePin(GPIOC, GPIO_PIN_1, GPIO_PIN_SET);
 //	  HAL_SPI_Transmit(&hspi1, &spi_tx_test, 1, 5000);
 //	  HAL_GPIO_WritePin(SPI1_CS_1_GPIO_Port, SPI1_CS_1_Pin, GPIO_PIN_RESET);
 //	  HAL_SPI_Transmit(&hspi1, &spi_tx_test, 1, 5000);
@@ -272,7 +268,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.NSSPMode = SPI_NSS_PULSE_DISABLE;
   hspi1.Init.NSSPolarity = SPI_NSS_POLARITY_LOW;
   hspi1.Init.FifoThreshold = SPI_FIFO_THRESHOLD_01DATA;
-  hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_00CYCLE;
+  hspi1.Init.MasterSSIdleness = SPI_MASTER_SS_IDLENESS_15CYCLE;
   hspi1.Init.MasterInterDataIdleness = SPI_MASTER_INTERDATA_IDLENESS_00CYCLE;
   hspi1.Init.MasterReceiverAutoSusp = SPI_MASTER_RX_AUTOSUSP_DISABLE;
   hspi1.Init.MasterKeepIOState = SPI_MASTER_KEEP_IO_STATE_DISABLE;
@@ -305,7 +301,7 @@ static void MX_USART3_UART_Init(void)
 
   /* USER CODE END USART3_Init 1 */
   huart3.Instance = USART3;
-  huart3.Init.BaudRate = 115200;
+  huart3.Init.BaudRate = 921600 ;
   huart3.Init.WordLength = UART_WORDLENGTH_8B;
   huart3.Init.StopBits = UART_STOPBITS_1;
   huart3.Init.Parity = UART_PARITY_NONE;
