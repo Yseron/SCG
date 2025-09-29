@@ -106,50 +106,39 @@ int main(void)
   /* USER CODE BEGIN WHILE */
 //  uint8_t dataBuffer[260 * NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
 //  uint16_t dataBufferCtrl[NUM_SENSORS + 2] = {0};
-  uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
-  uint8_t size = 16;
-  uint8_t text[] = "Value: ";
-  uint8_t newline[] = "\r\n";
-  uint8_t multiple[size];
-  uint8_t readyData[] = "          |                                                            \r\n";
-  uint8_t test[15] = {
-	  0x0D,
-      0x40, 0x00,
-      0xC0, 0x00,
-      0x20, 0x00,
-      0x08, 0x21,
-      0xF7, 0xDF,
-      0x41, 0x88,
-	  0x12, 0x34
-  };
+  uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED] = {0};
+  uint8_t error[] = "Error";
+//  uint8_t readyData[] = "          |                                                            \r\n";
+//  uint8_t test[15] = {
+//	  0x0D,
+//      0x40, 0x00,
+//      0xC0, 0x00,
+//      0x20, 0x00,
+//      0x08, 0x21,
+//      0xF7, 0xDF,
+//      0x41, 0x88,
+//	  0x12, 0x34
+//  };
 
   uartSetup(&huart2);
 
-
   volatile HAL_StatusTypeDef status = SetupSensors(&hspi1);
+  while(status == HAL_ERROR){
+	  HAL_UART_Transmit(&huart2, error, sizeof(error), 1000);
+  }
+  HAL_Delay(1000);
+
   while (1)
   {
-	  ICM42688ReadIMU(0, &hspi1, test + 1);
-	  uartSendSensorData(&huart2, test, readyData);
-	  HAL_UART_Transmit(&huart2, readyData, sizeof(readyData), 1000);
-//	  ICM42688Write(0, &hspi1, 0x14, 0x33);
-//	  ICM42688ReadSingle(0, &hspi1, 0x75, multiple);
-//	  HAL_StatusTypeDef status = ICM42688Setup(0, &hspi1);
-//	  status = HAL_OK;
-//	  for (int i = 0; i < size; i++) {
-//	          uint8_t first_digit = multiple[i];
-//	          while (first_digit >= 10) {
-//	              first_digit /= 10;  // get first digit
-//	          }
-//	          multiple[i] = '0' + first_digit;  // overwrite with ASCII
-//	      }
-//	  HAL_UART_Transmit(&huart2, text, sizeof(text), 1000);
-//	  HAL_UART_Transmit(&huart2, multiple, size, 1000);
-//	  HAL_UART_Transmit(&huart2, newline, sizeof(newline), 1000);
-//	  for (int i = 0; i < size; i++) {
-//	      multiple[i] = 0;
-//	  }
 	  HAL_Delay(100);
+	  ReadSensors(&hspi1, dataBuffer);
+	  uartSendMeasurement(&huart2, dataBuffer);
+//	  ICM42688ReadFIFO(13, &hspi1, test);
+//	  uartSendSensorData(&huart2, dataBuffer, readyData);
+//	  HAL_UART_Transmit_DMA(&huart2, readyData, sizeof(readyData));
+//		while(uartComplete == 0){
+//		}
+//		uartComplete = 0;
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -185,7 +174,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_ON;
   RCC_OscInitStruct.PLL.PLLSource = RCC_PLLSOURCE_HSE;
   RCC_OscInitStruct.PLL.PLLMUL = RCC_PLLMUL_8;
-  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_2;
+  RCC_OscInitStruct.PLL.PLLDIV = RCC_PLLDIV_3;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
     Error_Handler();
@@ -236,7 +225,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_32;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
@@ -351,7 +340,7 @@ static void MX_GPIO_Init(void)
   GPIO_InitStruct.Pin = SPI1_CS_1_Pin|SPI1_CS_2_Pin;
   GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;
   GPIO_InitStruct.Pull = GPIO_NOPULL;
-  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_LOW;
+  GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_VERY_HIGH;
   HAL_GPIO_Init(GPIOB, &GPIO_InitStruct);
 
   /* USER CODE BEGIN MX_GPIO_Init_2 */

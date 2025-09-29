@@ -50,6 +50,16 @@ HAL_StatusTypeDef SetupSensors(SPI_HandleTypeDef *hspi){
 	return status;
 }
 
+HAL_StatusTypeDef ReadSensors(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
+	for (uint8_t currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
+		HAL_StatusTypeDef status = ICM42688ReadIMU(currentSensor, hspi, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED));
+		if (status == HAL_ERROR) {
+			return HAL_ERROR;
+		}
+	}
+	return HAL_OK;
+}
+
 /**
   * @brief  reads all FIFOs and saves them in dataBuffer, FIFO packet of 16 bytes is set and is modified according to ICM42688ReadFIFO()
   * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.

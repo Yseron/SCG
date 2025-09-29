@@ -5,14 +5,12 @@
 
 uint8_t spacer[] = "-----------------------------------------------------------------------\r\n";
 uint8_t newline[] = "\r\n";
-volatile uint8_t uartComplete = 0;
+volatile uint8_t uartComplete = 1;
 
 void uartSetup(UART_HandleTypeDef *huart){
 	  uint8_t header[] = "Sensor    |Accel X   Accel Y   Accel Z   Gyro X    Gyro Y    Gyro Z    \r\n";
 	  HAL_UART_Transmit(huart, header, sizeof(header) - 1, 1000);
-
 	  HAL_UART_Transmit(huart, spacer, sizeof(spacer) - 1, 1000);
-
 }
 
 void uartSendSensorData(UART_HandleTypeDef *huart, uint8_t *dataPacket, uint8_t *readyData){
@@ -58,7 +56,7 @@ void uartSendMeasurement(UART_HandleTypeDef *huart, uint8_t *dataBuffer){
 	while(uartComplete == 0){
 	}
 	uartComplete = 0;
-	uint8_t readyData[] =
+	 static uint8_t readyData[] =
 			"          |                                                            \r\n"
 			"          |                                                            \r\n"
 			"          |                                                            \r\n"
@@ -71,7 +69,7 @@ void uartSendMeasurement(UART_HandleTypeDef *huart, uint8_t *dataBuffer){
 	for (int currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
 		uartSendSensorData(huart, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED), readyData + (sizeof(spacer) * currentSensor));
 	}
-	HAL_UART_Transmit_DMA(huart, readyData, sizeof(readyData));
+	HAL_UART_Transmit_DMA(huart, readyData, sizeof(readyData) - 1);
 }
 
 void uartChangeFormat(int16_t data, uint8_t *dataText, uint8_t sensorType){

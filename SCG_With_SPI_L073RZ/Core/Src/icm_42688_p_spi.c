@@ -10,10 +10,10 @@
 
 /************************* Defines etc. ************************/
 //Debug
-#define ENABLE_CLKIN 0 		 // 1 to disable CLKIN, 0 to enable CLKIN
-#define ENABLE_FIFO 0 			 // 1 to disable FIFO, 0 to enable FIFO
-#define ENABLE_FILTER 0		 // 1 to disable Filters, 0 to enable Filters
-#define DISABLE_WRITE_CHECK	0	 // 1 to disable read on just written register, checking if value is equal
+#define ENABLE_CLKIN 0 		 	// 1 to disable CLKIN, 0 to enable CLKIN
+#define ENABLE_FIFO 1 			// 1 to disable FIFO, 0 to enable FIFO
+#define ENABLE_FILTER 0		 	// 1 to disable Filters, 0 to enable Filters, NOT WORKING
+#define DISABLE_WRITE_CHECK	0	// 1 to disable read on just written register, checking if value is equal
 
 //Register Banks
 #define REG_BANK_SEL 					0x76		//Register for selecting register bank
@@ -29,6 +29,7 @@
 #define DRIVE_CONFIG 					0x13
 	#define SPI_SLEW_RATE				(0 << 0)	//SPI SLEW RATE
 #define FIFO_CONFIG 					0x16
+	#define FIFO_MODE_STREAM_TO_FIFO	(1 << 6)	//Streams to FIFO
 	#define FIFO_MODE_STOP_ON_FULL		(2 << 6)	//FIFO stops if full
 #define TEMP_DATA1						0x1D		//1st of 2 bytes of Temp data
 #define ACCEL_DATA_X1					0x1F		//1st of 12 bytes of accel & gyro data
@@ -111,13 +112,11 @@ HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hs
   * @retval HAL status
   */
 HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
-	const uint8_t TxData = ACCEL_DATA_X1 | 0x80; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
+	const uint8_t TxData[13] = {ACCEL_DATA_X1 | 0x80, 0}; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &TxData, 1, 1000); //read 1 byte from register
-	if (status == HAL_OK) {
-			status = HAL_SPI_Receive(hspi, (uint8_t*)pRxData, 12, 1000); //receive bytes from register
-		}
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxData, pRxData, 13, 1000); //read 1 byte from register
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
+	pRxData[0] = sensorNumber + 1;
 	return status;
 }
 
@@ -197,51 +196,58 @@ HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi,
   */
 HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
 	//Read number of packets in FIFO
-	uint8_t PacketsInFIFO = 0;
-	do{
-	ICM42688ReadSingle(sensorNumber, hspi, FIFO_COUNTL, &PacketsInFIFO); // reads only lower byte as not more than 256 packets can be in the FIFO for the 3rd packet type
-	//Check if
-	}while (PacketsInFIFO == 0);
-	if (PacketsInFIFO > 130) {
+//	uint8_t PacketsInFIFORx[3];
+//	uint16_t PacketsInFIFO;
+//	do{
+//		const uint8_t TxData[3] = {FIFO_COUNTH | 0x80}; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
+//		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+//		HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxData, PacketsInFIFORx, 3, 1000); //read 1 byte from register
+//		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
+//		PacketsInFIFO = (PacketsInFIFORx[1] << 8) | PacketsInFIFORx[2];
+//		//Check if
+//	}while (PacketsInFIFO == 0);
+//	if (PacketsInFIFO > 130) {
+//		return HAL_ERROR;
+//	}
+	const uint8_t TxFIFO[1] = {FIFO_DATA | 0x80};
+	uint8_t	RxFIFO[16];
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, TxFIFO, 1, 1000);
+	if (status == HAL_OK) {
+		status = HAL_SPI_Receive(hspi, RxFIFO, 16, 1000); //receive bytes from register
+	}
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
+
+//	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+//	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxFIFO, RxFIFO, FIFO_PACKET_SIZE + 1, 1000);
+//	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
+	if (status != HAL_OK) {
 		return HAL_ERROR;
 	}
-	const uint8_t TxFIFO = FIFO_DATA | 0x80;
-	uint8_t	RxFIFO[FIFO_PACKET_SIZE];
-	for (int i = 0; i < FIFO_PACKET_SIZE; i++) {
-		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-		HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &TxFIFO, 1, 1000);
-		if (status == HAL_OK) {
-			status = HAL_SPI_Receive(hspi, RxFIFO + i, 1, 1000); //receive bytes from register
-		}
-		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
-		if (status != HAL_OK) {
-			return HAL_ERROR;
-		}
-		//Modifies read data and saves it to dataBuffer
-		//New packet: 	1 byte sensor number
-		//				6 bytes accel data
-		//				6 bytes gyro data
-		//				2 bytes timestamp
-		//Header
-		dataBuffer[0] = sensorNumber;
-		//Accel
-		dataBuffer[1] = RxFIFO[1];
-		dataBuffer[2] = RxFIFO[2];
-		dataBuffer[3] = RxFIFO[3];
-		dataBuffer[4] = RxFIFO[4];
-		dataBuffer[5] = RxFIFO[5];
-		dataBuffer[6] = RxFIFO[6];
-		//Gyro
-		dataBuffer[7] = RxFIFO[7];
-		dataBuffer[8] = RxFIFO[8];
-		dataBuffer[9] = RxFIFO[9];
-		dataBuffer[10] = RxFIFO[10];
-		dataBuffer[11] = RxFIFO[11];
-		dataBuffer[12] = RxFIFO[12];
-		//Timestamp
-		dataBuffer[13] = RxFIFO[14];
-		dataBuffer[14] = RxFIFO[15];
-	}
+	//Modifies read data and saves it to dataBuffer
+	//New packet: 	1 byte sensor number
+	//				6 bytes accel data
+	//				6 bytes gyro data
+	//				2 bytes timestamp
+	//Header
+	dataBuffer[0] = sensorNumber + 1;
+	//Accel
+	dataBuffer[1] = RxFIFO[2];
+	dataBuffer[2] = RxFIFO[3];
+	dataBuffer[3] = RxFIFO[4];
+	dataBuffer[4] = RxFIFO[5];
+	dataBuffer[5] = RxFIFO[6];
+	dataBuffer[6] = RxFIFO[7];
+	//Gyro
+	dataBuffer[7] = RxFIFO[8];
+	dataBuffer[8] = RxFIFO[9];
+	dataBuffer[9] = RxFIFO[10];
+	dataBuffer[10] = RxFIFO[11];
+	dataBuffer[11] = RxFIFO[12];
+	dataBuffer[12] = RxFIFO[13];
+	//Timestamp
+	dataBuffer[13] = RxFIFO[15];
+	dataBuffer[14] = RxFIFO[16];
 	return HAL_OK;
 }
 
@@ -289,7 +295,7 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ICM42688Write(sensorNumber, hspi, DRIVE_CONFIG, 0x02) != HAL_OK){ //?????????????????????????????????????????????? TODO: fix
+	if(ICM42688Write(sensorNumber, hspi, DRIVE_CONFIG, 0x03) != HAL_OK){ // 0x05 doesnt work, 0x00 only for 4 MHz and below, not 8 MHz
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
@@ -304,30 +310,38 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 	if(ENABLE_CLKIN){ //Skips setup of CLKIN if define is set to 1
 		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG1, INTF_CONFIG1_RESERVED | RTC_MODE | CLKSEL) != HAL_OK){
 			return HAL_ERROR;
+			HAL_Delay(1);
 		}
 		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_1) != HAL_OK){
 			return HAL_ERROR;
+			HAL_Delay(1);
 		}
 		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG5, PIN9_FUNCTION_CLKIN) != HAL_OK){
 			return HAL_ERROR;
+			HAL_Delay(1);
 		}
 		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_0) != HAL_OK){
 			return HAL_ERROR;
+			HAL_Delay(1);
 		}
 	}
 	if(ENABLE_FIFO){ // Skips setup of FIFO if set to 1
-		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG0, FIFO_COUNT_REC_RECORDS | FIFO_COUNT_ENDIAN_BIG | SENSOR_DATA_ENDIAN_BIG) != HAL_OK){
-			return HAL_ERROR;
-		}
-		if(ICM42688Write(sensorNumber, hspi, FIFO_CONFIG, FIFO_MODE_STOP_ON_FULL) != HAL_OK){
-			return HAL_ERROR;
-		}
 		if(ICM42688Write(sensorNumber, hspi, FIFO_CONFIG1, FIFO_RESUME_PARTIAL_RD_TRUE | FIFO_TEMP_EN | FIFO_GYRO_EN | FIFO_ACCEL_EN) != HAL_OK){
 			return HAL_ERROR;
+			HAL_Delay(1);
 		}
-		if(ICM42688Write(sensorNumber, hspi, TMST_CONFIG, TMST_CONFIG_RESERVED | TMST_RES_RTC | TMST_FSYNC_EN_DISABLE | TMST_EN) != HAL_OK){
+//		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG0, FIFO_COUNT_REC_RECORDS | FIFO_COUNT_ENDIAN_BIG | SENSOR_DATA_ENDIAN_BIG) != HAL_OK){
+//			return HAL_ERROR;
+//			HAL_Delay(1);
+//		}
+		if(ICM42688Write(sensorNumber, hspi, FIFO_CONFIG, FIFO_MODE_STREAM_TO_FIFO) != HAL_OK){
 			return HAL_ERROR;
+			HAL_Delay(1);
 		}
+//		if(ICM42688Write(sensorNumber, hspi, TMST_CONFIG, TMST_CONFIG_RESERVED | TMST_RES_RTC | TMST_FSYNC_EN_DISABLE | TMST_EN) != HAL_OK){
+//			return HAL_ERROR;
+//			HAL_Delay(1);
+//		}
 	}
 	if(ENABLE_FILTER){ //Disables filters
 		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_1) != HAL_OK){
