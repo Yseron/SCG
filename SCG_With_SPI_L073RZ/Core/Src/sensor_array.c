@@ -30,7 +30,6 @@ const SensorCS sensorCSPin[NUM_SENSORS] = {
     {GPIOD, GPIO_PIN_3}  // SENSOR_15*/
 };
 /************************* Variables etc. ************************/
-uint8_t spi_rx_single[2] = {0x00, 0x00};
 uint16_t dataBufferPosition = 0;
 
 /************************* Functions ************************/
@@ -50,9 +49,15 @@ HAL_StatusTypeDef SetupSensors(SPI_HandleTypeDef *hspi){
 	return status;
 }
 
+/**
+  * @brief  reads all sensors directly and saves them in dataBuffer, the 12 data bytes are read and a sensor number byte is prepended
+  * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+  * @param dataBuffer : large buffer to read all sensors a single time, size should be according to the modified FIFO packet
+  * @retval HAL status
+  */
 HAL_StatusTypeDef ReadSensors(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
 	for (uint8_t currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
-		HAL_StatusTypeDef status = ICM42688ReadIMU(currentSensor, hspi, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED));
+		HAL_StatusTypeDef status = ICM42688ReadIMU(currentSensor, hspi, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED)); //Inputs pointer to start of the space for the data of the current sensor
 		if (status == HAL_ERROR) {
 			return HAL_ERROR;
 		}
@@ -63,33 +68,17 @@ HAL_StatusTypeDef ReadSensors(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
 /**
   * @brief  reads all FIFOs and saves them in dataBuffer, FIFO packet of 16 bytes is set and is modified according to ICM42688ReadFIFO()
   * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
-  * @param dataBuffer : large buffer for all read content
+  * @param dataBuffer : large buffer to read all sensors a single time, size should be according to the modified FIFO packet
   * @retval HAL status
   */
 HAL_StatusTypeDef ReadFIFOs(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
 	for (uint8_t currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
-		HAL_StatusTypeDef status = ICM42688ReadFIFO(currentSensor, hspi, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED));
+		HAL_StatusTypeDef status = ICM42688ReadFIFO(currentSensor, hspi, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED));  //Inputs pointer to start of the space for the data of the current sensor
 		if (status == HAL_ERROR) {
 			return HAL_ERROR;
 		}
 	}
 	return HAL_OK;
-}
-
-/**
-  * @brief  reads WhoAmI register of all sensors. TODO: implement save location for read data
-  * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
-  * @retval HAL status
-  */
-HAL_StatusTypeDef CheckWhoAmI(SPI_HandleTypeDef *hspi){
-	HAL_StatusTypeDef status = HAL_OK;
-	for (uint8_t i = 0; i < NUM_SENSORS; i++) {
-		HAL_StatusTypeDef status_inside = ICM42688CheckWhoAmI(i, hspi);
-		if (status_inside != HAL_OK) {
-			status = HAL_ERROR;
-		}
-	}
-	return status;
 }
 
 /**

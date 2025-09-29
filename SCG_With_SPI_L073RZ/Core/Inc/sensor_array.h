@@ -20,13 +20,10 @@ typedef struct {
 } SensorCS;
 
 /************************* Variables etc. ************************/
-extern uint8_t spi_rx_single[2];
-
 extern const SensorCS sensorCSPin[NUM_SENSORS];
 
 /************************* Functions ************************/
 HAL_StatusTypeDef SetupSensors();
-HAL_StatusTypeDef CheckWhoAmI(SPI_HandleTypeDef *hspi);
 HAL_StatusTypeDef ReadFIFOs(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer);
 HAL_StatusTypeDef ReadSensors(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer);
 void SetCSStartup();

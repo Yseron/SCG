@@ -112,11 +112,11 @@ HAL_StatusTypeDef ICM42688ReadSingle(uint8_t sensorNumber, SPI_HandleTypeDef *hs
   * @retval HAL status
   */
 HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *pRxData){
-	const uint8_t TxData[13] = {ACCEL_DATA_X1 | 0x80, 0}; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
+	const uint8_t TxData[DIRECT_DATA_SIZE + 1] = {ACCEL_DATA_X1 | 0x80, 0}; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxData, pRxData, 13, 1000); //read 1 byte from register
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxData, pRxData, DIRECT_DATA_SIZE + 1, 1000); //read 12 bytes from register
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
-	pRxData[0] = sensorNumber + 1;
+	pRxData[0] = sensorNumber + 1; //sets first byte to current sensor number
 	return status;
 }
 
@@ -261,15 +261,15 @@ HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi
   */
 HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t data){
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &sensorRegister, 1, 1000); //transmit first byte
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &sensorRegister, 1, 1000); //transmit write command and register value
 	if (status == HAL_OK) {
-			status = HAL_SPI_Transmit(hspi, &data, 1, 1000); //transmit data byte to register
+			status = HAL_SPI_Transmit(hspi, &data, 1, 1000); //transmit data to register
 		}
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to high
 	if (DISABLE_WRITE_CHECK == 0 && sensorRegister != 0x11) { //doesn't check device_config but also 0x11 register on all other banks, TODO: fix
 		uint8_t RxDataCheck = 0x00;
 		ICM42688ReadSingle(sensorNumber, hspi, sensorRegister, &RxDataCheck);
-		if (RxDataCheck != data) {
+		if (RxDataCheck != data) { //Checks if written value is as it should be
 			return HAL_ERROR;
 		}
 	}
@@ -325,7 +325,7 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 			HAL_Delay(1);
 		}
 	}
-	if(ENABLE_FIFO){ // Skips setup of FIFO if set to 1
+	if(ENABLE_FIFO){ // Skips setup of FIFO if set to 0
 		if(ICM42688Write(sensorNumber, hspi, FIFO_CONFIG1, FIFO_RESUME_PARTIAL_RD_TRUE | FIFO_TEMP_EN | FIFO_GYRO_EN | FIFO_ACCEL_EN) != HAL_OK){
 			return HAL_ERROR;
 			HAL_Delay(1);
@@ -343,7 +343,7 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 //			HAL_Delay(1);
 //		}
 	}
-	if(ENABLE_FILTER){ //Disables filters
+	if(ENABLE_FILTER){ //Enables filters, doesnt work
 		if(ICM42688Write(sensorNumber, hspi, REG_BANK_SEL, REGISTER_BANK_1) != HAL_OK){
 			return HAL_ERROR;
 		}
@@ -363,15 +363,3 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 	return HAL_OK;
 }
 
-/**
-  * @brief  reads WhoAmI register of a sensor
-  * @param  sensorNumber: number of sensor up to NUM_SENSORS. sensorCSPin has to be setup first
-  * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
-  * @retval HAL status
-  */
-HAL_StatusTypeDef ICM42688CheckWhoAmI(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
-	if(ICM42688ReadSingle(sensorNumber, hspi, WHO_AM_I, spi_rx_single) != HAL_OK){
-		return HAL_ERROR;
-	}
-	return HAL_OK;
-}

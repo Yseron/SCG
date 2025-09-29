@@ -43,12 +43,11 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
-
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_tx;
 
 /* USER CODE BEGIN PV */
-uint8_t dataBuffer[FIFO_PACKET_SIZE_MODIFIED * DATA_BUFFER_MAX_PACKAGES];
+
 /* USER CODE END PV */
 
 /* Private function prototypes -----------------------------------------------*/
@@ -104,35 +103,31 @@ int main(void)
 
   /* Infinite loop */
   /* USER CODE BEGIN WHILE */
-//  uint8_t dataBuffer[260 * NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED];
-//  uint16_t dataBufferCtrl[NUM_SENSORS + 2] = {0};
+  /************************* Code explaination ************************/
+  //Sensors and Uart gets setup
+  //The FIFO is used
+  //In each loop of the main loop, a single packet of every sensor is read and modified to a reduced packet as given in the icm file
+  //This is put in an array of where one modified packet of each sensor is located after each other
+  //This is feed to the uart part where an empty array for a table that is sent via uart is created
+  //Every modified packet is changed to it value in a float and this is put digitwise into their respective row of the table
+  //The table is sent in a long uart message via DMA
+  /***************************************************************/
+
   uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED] = {0};
   uint8_t error[] = "Error";
-//  uint8_t readyData[] = "          |                                                            \r\n";
-//  uint8_t test[15] = {
-//	  0x0D,
-//      0x40, 0x00,
-//      0xC0, 0x00,
-//      0x20, 0x00,
-//      0x08, 0x21,
-//      0xF7, 0xDF,
-//      0x41, 0x88,
-//	  0x12, 0x34
-//  };
 
-  uartSetup(&huart2);
-
-  volatile HAL_StatusTypeDef status = SetupSensors(&hspi1);
-  while(status == HAL_ERROR){
+  uartSetup(&huart2);											//Prints Header and separator bar
+  volatile HAL_StatusTypeDef status = SetupSensors(&hspi1);		//Initializes Sensors according to setup at the top of the icm file
+  while(status == HAL_ERROR){									//Checks if setup worked
 	  HAL_UART_Transmit(&huart2, error, sizeof(error), 1000);
   }
-  HAL_Delay(1000);
+  HAL_Delay(1000);												//Should be unneccessary
 
   while (1)
   {
-	  HAL_Delay(100);
-	  ReadSensors(&hspi1, dataBuffer);
-	  uartSendMeasurement(&huart2, dataBuffer);
+	  HAL_Delay(100);											//Should be unneccessary
+	  ReadSensors(&hspi1, dataBuffer);							//Reads sensor directly
+	  uartSendMeasurement(&huart2, dataBuffer);					//Prints one measurement of all sensors
 //	  ICM42688ReadFIFO(13, &hspi1, test);
 //	  uartSendSensorData(&huart2, dataBuffer, readyData);
 //	  HAL_UART_Transmit_DMA(&huart2, readyData, sizeof(readyData));

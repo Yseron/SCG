@@ -13,6 +13,7 @@
 #define FIFO_PACKET_SIZE 			16
 #define FIFO_MAX_SIZE				2048
 #define FIFO_PACKET_SIZE_MODIFIED	15
+#define DIRECT_DATA_SIZE			12
 
 /************************* Variables etc. ************************/
 
@@ -22,5 +23,4 @@ HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi,
 HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *dataBuffer);
 HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t sensorRegister, uint8_t data);
 HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi);
-HAL_StatusTypeDef ICM42688CheckWhoAmI(uint8_t sensorNumber, SPI_HandleTypeDef *hspi);
 #endif /* INC_ICM_42688_P_SENSOR_H_ */
