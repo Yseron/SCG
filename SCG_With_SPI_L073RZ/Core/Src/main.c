@@ -43,6 +43,7 @@
 
 /* Private variables ---------------------------------------------------------*/
 SPI_HandleTypeDef hspi1;
+
 UART_HandleTypeDef huart2;
 DMA_HandleTypeDef hdma_usart2_tx;
 
@@ -107,33 +108,33 @@ int main(void)
   //Sensors and Uart gets setup
   //The FIFO is used
   //In each loop of the main loop, a single packet of every sensor is read and modified to a reduced packet as given in the icm file
+  //The sensor number is set to 99 if the FIFO is full when reading a measurement
   //This is put in an array of where one modified packet of each sensor is located after each other
   //This is feed to the uart part where an empty array for a table that is sent via uart is created
   //Every modified packet is changed to it value in a float and this is put digitwise into their respective row of the table
   //The table is sent in a long uart message via DMA
   /***************************************************************/
 
-  uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED] = {0};
+  static uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED] = {0};
   uint8_t error[] = "Error";
+  static uint8_t readyData[] = "      |                                                      \r\n";
+  static uint8_t test[13];
 
   uartSetup(&huart2);											//Prints Header and separator bar
   volatile HAL_StatusTypeDef status = SetupSensors(&hspi1);		//Initializes Sensors according to setup at the top of the icm file
   while(status == HAL_ERROR){									//Checks if setup worked
 	  HAL_UART_Transmit(&huart2, error, sizeof(error), 1000);
   }
-  HAL_Delay(1000);												//Should be unneccessary
+  HAL_Delay(100);												//Should be unneccessary
 
   while (1)
   {
-	  HAL_Delay(100);											//Should be unneccessary
+//	  HAL_Delay(10);											//Should be unneccessary
 	  ReadSensors(&hspi1, dataBuffer);							//Reads sensor directly
+//	  ICM42688ReadFIFO(0, &hspi1, test);
 	  uartSendMeasurement(&huart2, dataBuffer);					//Prints one measurement of all sensors
-//	  ICM42688ReadFIFO(13, &hspi1, test);
-//	  uartSendSensorData(&huart2, dataBuffer, readyData);
-//	  HAL_UART_Transmit_DMA(&huart2, readyData, sizeof(readyData));
-//		while(uartComplete == 0){
-//		}
-//		uartComplete = 0;
+//	  uartSendSensorData(&huart2, test, readyData);
+//	  HAL_UART_Transmit(&huart2, readyData, sizeof(readyData), 1000);
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
@@ -251,7 +252,7 @@ static void MX_USART2_UART_Init(void)
 
   /* USER CODE END USART2_Init 1 */
   huart2.Instance = USART2;
-  huart2.Init.BaudRate = 115200;
+  huart2.Init.BaudRate = 230400;
   huart2.Init.WordLength = UART_WORDLENGTH_8B;
   huart2.Init.StopBits = UART_STOPBITS_1;
   huart2.Init.Parity = UART_PARITY_NONE;

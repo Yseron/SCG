@@ -11,7 +11,7 @@
 #include "stm32l0xx_hal.h"
 
 /************************* Defines etc. ************************/
-#define NUM_SENSORS 				1
+#define NUM_SENSORS 				8
 #define DATA_BUFFER_MAX_PACKAGES	1000
 
 typedef struct {

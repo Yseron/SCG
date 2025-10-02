@@ -196,31 +196,24 @@ HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi,
   */
 HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
 	//Read number of packets in FIFO
-//	uint8_t PacketsInFIFORx[3];
-//	uint16_t PacketsInFIFO;
-//	do{
-//		const uint8_t TxData[3] = {FIFO_COUNTH | 0x80}; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
-//		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-//		HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxData, PacketsInFIFORx, 3, 1000); //read 1 byte from register
-//		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
-//		PacketsInFIFO = (PacketsInFIFORx[1] << 8) | PacketsInFIFORx[2];
-//		//Check if
-//	}while (PacketsInFIFO == 0);
-//	if (PacketsInFIFO > 130) {
-//		return HAL_ERROR;
-//	}
-	const uint8_t TxFIFO[1] = {FIFO_DATA | 0x80};
-	uint8_t	RxFIFO[16];
-	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, TxFIFO, 1, 1000);
-	if (status == HAL_OK) {
-		status = HAL_SPI_Receive(hspi, RxFIFO, 16, 1000); //receive bytes from register
+	uint8_t PacketsInFIFORx[3];
+	uint16_t PacketsInFIFO;
+	do{
+		const uint8_t TxData[3] = {FIFO_COUNTH | 0x80}; // set Tx register and set first bit to 1(read) ACCEL_DATA_X1
+		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+		HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxData, PacketsInFIFORx, 3, 1000); //read 1 byte from register
+		HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
+		PacketsInFIFO = (PacketsInFIFORx[1] << 8) | PacketsInFIFORx[2];
+		//Check if
+	}while (PacketsInFIFO == 0);
+	if (PacketsInFIFO > 130) {
+		return HAL_ERROR;
 	}
+	const uint8_t TxFIFO[17] = {FIFO_DATA | 0x80};
+	uint8_t	RxFIFO[17];
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxFIFO, RxFIFO, FIFO_PACKET_SIZE + 1, 1000);
 	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
-
-//	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-//	HAL_StatusTypeDef status = HAL_SPI_TransmitReceive(hspi, TxFIFO, RxFIFO, FIFO_PACKET_SIZE + 1, 1000);
-//	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
 	if (status != HAL_OK) {
 		return HAL_ERROR;
 	}
@@ -231,6 +224,9 @@ HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi
 	//				2 bytes timestamp
 	//Header
 	dataBuffer[0] = sensorNumber + 1;
+	if (PacketsInFIFO >= 126) {
+		dataBuffer[0] = 99; //If the FIFO is full, the number is set to 99
+	}
 	//Accel
 	dataBuffer[1] = RxFIFO[2];
 	dataBuffer[2] = RxFIFO[3];
@@ -299,11 +295,11 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ICM42688Write(sensorNumber, hspi, GYRO_CONFIG0, GYRO_FS_SEL_15_625 | GYRO_ODR_12_5) != HAL_OK){
+	if(ICM42688Write(sensorNumber, hspi, GYRO_CONFIG0, GYRO_FS_SEL_15_625 | GYRO_ODR_1000) != HAL_OK){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ICM42688Write(sensorNumber, hspi, ACCEL_CONFIG0, ACCEL_FS_SEL_2 | ACCEL_ODR_12_5) != HAL_OK){
+	if(ICM42688Write(sensorNumber, hspi, ACCEL_CONFIG0, ACCEL_FS_SEL_2 | ACCEL_ODR_1000) != HAL_OK){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
@@ -330,14 +326,15 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 			return HAL_ERROR;
 			HAL_Delay(1);
 		}
-//		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG0, FIFO_COUNT_REC_RECORDS | FIFO_COUNT_ENDIAN_BIG | SENSOR_DATA_ENDIAN_BIG) != HAL_OK){
-//			return HAL_ERROR;
-//			HAL_Delay(1);
-//		}
 		if(ICM42688Write(sensorNumber, hspi, FIFO_CONFIG, FIFO_MODE_STREAM_TO_FIFO) != HAL_OK){
 			return HAL_ERROR;
 			HAL_Delay(1);
 		}
+		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG0, FIFO_COUNT_REC_RECORDS | FIFO_COUNT_ENDIAN_BIG | SENSOR_DATA_ENDIAN_BIG) != HAL_OK){
+			return HAL_ERROR;
+			HAL_Delay(1);
+		}
+		//Makes it break ¯\_(ツ)_/¯
 //		if(ICM42688Write(sensorNumber, hspi, TMST_CONFIG, TMST_CONFIG_RESERVED | TMST_RES_RTC | TMST_FSYNC_EN_DISABLE | TMST_EN) != HAL_OK){
 //			return HAL_ERROR;
 //			HAL_Delay(1);

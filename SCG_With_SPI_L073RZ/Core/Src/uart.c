@@ -6,7 +6,7 @@
 /************************* Defines etc. ************************/
 
 /************************* Variables etc. ************************/
-uint8_t spacer[] = "-----------------------------------------------------------------------\r\n";
+uint8_t spacer[] = "-------------------------------------------------------------\r\n";
 uint8_t newline[] = "\r\n";
 volatile uint8_t uartComplete = 1;
 
@@ -17,7 +17,7 @@ volatile uint8_t uartComplete = 1;
   * @retval none
   */
 void uartSetup(UART_HandleTypeDef *huart){
-	  uint8_t header[] = "Sensor    |Accel X   Accel Y   Accel Z   Gyro X    Gyro Y    Gyro Z    \r\n";
+	  uint8_t header[] = "Sensor|Accel X   Accel Y   Accel Z   Gyro X    Gyro Y    Gyro Z      \r\n";
 	  HAL_UART_Transmit(huart, header, sizeof(header) - 1, 1000); //sends header
 	  HAL_UART_Transmit(huart, spacer, sizeof(spacer) - 1, 1000); //sends horizontal line
 }
@@ -32,7 +32,7 @@ void uartSetup(UART_HandleTypeDef *huart){
 void uartSendSensorData(UART_HandleTypeDef *huart, uint8_t *dataPacket, uint8_t *readyData){
 	readyData[0] = '0' + (dataPacket[0] / 10); //Puts sensor number in first 2 spots
 	readyData[1] = '0' + (dataPacket[0] % 10);
-	uint8_t dataText[] = "          "; //Template for every changed value
+	uint8_t dataText[] = "         "; //Template for every changed value
 	for (int i = 0; i < 6; i++) { //Iterates over every sensor measurement, i.e. accel x,y,z & gyro x,y,z
 		int16_t data = (int16_t)((dataPacket[i + i + 1] << 8) | dataPacket[i + i + 2]); //Creates two's complement from both data bytes
 		if (i <= 2) { //If data is for accelerometer
@@ -40,8 +40,8 @@ void uartSendSensorData(UART_HandleTypeDef *huart, uint8_t *dataPacket, uint8_t 
 		}else{ //If data is from gyroscope
 			uartChangeFormat(data, dataText, 1);
 		}
-		for (int j = 0; j < 10; j++) {
-			readyData[j + (i * 10) + 11] = dataText[j]; //Copies data row into the table
+		for (int j = 0; j < 9; j++) {
+			readyData[j + (i * 9) + 7] = dataText[j]; //Copies data row into the table
 		}
 	}
 }
@@ -51,14 +51,14 @@ void uartSendSensorData(UART_HandleTypeDef *huart, uint8_t *dataPacket, uint8_t 
 //	}
 //	uartComplete = 0;
 //	uint8_t readyData[] =
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
-//			"          |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
+//			"         |                                                            \r\n"
 //			"-----------------------------------------------------------------------\r\n";
 //	uint16_t offset = dataBufferCtrl[NUM_SENSORS + 1] * NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED;
 //	for (int currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
@@ -75,21 +75,21 @@ void uartSendSensorData(UART_HandleTypeDef *huart, uint8_t *dataPacket, uint8_t 
   * @retval none
   */
 void uartSendMeasurement(UART_HandleTypeDef *huart, uint8_t *dataBuffer){
-	while(uartComplete == 0){ //checks uartComplete flag
+	while(uartComplete != 1){ //checks uartComplete flag
 	}
 	uartComplete = 0;
 	 static uint8_t readyData[] = //Creates empty table
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"          |                                                            \r\n"
-			"-----------------------------------------------------------------------\r\n";
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"      |                                                      \r\n"
+			"\r\n";
 	for (int currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
-		uartSendSensorData(huart, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED), readyData + (sizeof(spacer) * currentSensor)); //Fills every row with sensor data, pointers are set to the beginning of the respective sensor data
+		uartSendSensorData(huart, dataBuffer + (currentSensor * FIFO_PACKET_SIZE_MODIFIED), readyData + ((sizeof(spacer) - 1) * currentSensor)); //Fills every row with sensor data, pointers are set to the beginning of the respective sensor data
 	}
 	HAL_UART_Transmit_DMA(huart, readyData, sizeof(readyData) - 1); //Sends whole table
 }
