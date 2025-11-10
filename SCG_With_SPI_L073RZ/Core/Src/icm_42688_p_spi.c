@@ -10,7 +10,7 @@
 
 /************************* Defines etc. ************************/
 //Debug
-#define ENABLE_CLKIN 0 		 	// 1 to disable CLKIN, 0 to enable CLKIN
+#define ENABLE_CLKIN 1 		 	// 1 to disable CLKIN, 0 to enable CLKIN
 #define ENABLE_FIFO 1 			// 1 to disable FIFO, 0 to enable FIFO
 #define ENABLE_FILTER 0		 	// 1 to disable Filters, 0 to enable Filters, NOT WORKING
 #define DISABLE_WRITE_CHECK	0	// 1 to disable read on just written register, checking if value is equal
@@ -36,6 +36,8 @@
 #define FIFO_COUNTH						0x2E		//1st of 2 bytes of FIFO count
 #define FIFO_COUNTL						0x2F		//2nd of 2 bytes of FIFO count
 #define FIFO_DATA						0x30		//FIFO data port
+#define SIGNAL_PATH_RESET				0x4B
+	#define FIFO_FLUSH					(1 << 1)	//Flushes FIFO when set to 1
 #define INTF_CONFIG0					0x4C
 	#define FIFO_COUNT_REC_RECORDS		(1 << 6)	//FIFO count is given in number of whole records
 	#define FIFO_COUNT_ENDIAN_BIG		(1 << 5)	//FIFO count is in big endian form(default)
@@ -51,11 +53,13 @@
 #define GYRO_CONFIG0 					0x4F
 	#define GYRO_FS_SEL_15_625 			(7 << 5)	//Gyro max dps +-15.625
 	#define GYRO_ODR_1000 				(6 << 0)	//Gyro ODR 1kHz
+	#define GYRO_ODR_200 				(7 << 0)	//Gyro ODR 200Hz
 	#define GYRO_ODR_100 				(8 << 0)	//Gyro ODR 100Hz
 	#define GYRO_ODR_12_5 				(11 << 0)	//Gyro ODR 12.5Hz
 #define ACCEL_CONFIG0 					0x50
 	#define ACCEL_FS_SEL_2				(3 << 5)	//Accel max g +-2
 	#define ACCEL_ODR_1000 				(6 << 0)	//Accel ODR 1kHz
+	#define ACCEL_ODR_200 				(7 << 0)	//Accel ODR 200Hz
 	#define ACCEL_ODR_100 				(8 << 0)	//Accel ODR 100Hz
 	#define ACCEL_ODR_12_5 				(11 << 0)	//Accel ODR 12.5Hz
 #define TMST_CONFIG						0x54
@@ -119,72 +123,6 @@ HAL_StatusTypeDef ICM42688ReadIMU(uint8_t sensorNumber, SPI_HandleTypeDef *hspi,
 	pRxData[0] = sensorNumber + 1; //sets first byte to current sensor number
 	return status;
 }
-
-///**
-//  * @brief  read the current FIFO content and modifies it and saves it to dataBuffer at position dataBufferPosition
-//  * @param  sensorNumber: number of sensor up to NUM_SENSORS. sensorCSPin has to be setup first
-//  * @param  hspi: pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
-//  * @param  dataBuffer: array in which the FIFO is saved
-//  * @param	dataBufferPosition: position where the data should be saved in dataBuffer
-//  * @retval HAL status
-//  */
-//HAL_StatusTypeDef ICM42688ReadFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, uint8_t *dataBuffer, uint16_t *dataBufferPosition){
-//	//Read number of packets in FIFO
-//	uint8_t PacketsInFIFO = 0;
-//	ICM42688ReadSingle(sensorNumber, hspi, FIFO_COUNTL, &PacketsInFIFO); // reads only lower byte as not more than 256 packets can be in the FIFO for the 3rd packet type
-//	//Check if
-//	if (16 * PacketsInFIFO > (FIFO_MAX_SIZE - FIFO_PACKET_SIZE)){
-//		return HAL_ERROR;
-//	}else if (PacketsInFIFO != 0) {
-//		//Enough space in dataBuffer
-//		const uint8_t TxFIFO = FIFO_DATA | 0x80;
-//		uint8_t	RxFIFO[FIFO_PACKET_SIZE];
-//		for (int i = 0; i < PacketsInFIFO; i++) {
-//			HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
-//			HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &TxFIFO, 1, 1000);
-//			if (status == HAL_OK) {
-//				status = HAL_SPI_Receive(hspi, (uint8_t*)RxFIFO, FIFO_PACKET_SIZE, 1000); //receive bytes from register
-//			}
-//			HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to low
-//			if (status != HAL_OK) {
-//				return HAL_ERROR;
-//			}
-//			uint16_t offset = (*dataBufferPosition * NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED) + (FIFO_PACKET_SIZE_MODIFIED * sensorNumber);
-//			//Modifies read data and saves it to dataBuffer
-//			//New packet: 	1 byte sensor number
-//			//				6 bytes accel data
-//			//				6 bytes gyro data
-//			//				2 bytes timestamp
-//			//Header
-//			dataBuffer[offset] = sensorNumber;
-//			//Accel
-//			dataBuffer[offset + 1] = RxFIFO[2];
-//			dataBuffer[offset + 2] = RxFIFO[3];
-//			dataBuffer[offset + 3] = RxFIFO[4];
-//			dataBuffer[offset + 4] = RxFIFO[5];
-//			dataBuffer[offset + 5] = RxFIFO[6];
-//			dataBuffer[offset + 6] = RxFIFO[7];
-//			//Gyro
-//			dataBuffer[offset + 7] = RxFIFO[8];
-//			dataBuffer[offset + 8] = RxFIFO[9];
-//			dataBuffer[offset + 9] = RxFIFO[10];
-//			dataBuffer[offset + 10] = RxFIFO[11];
-//			dataBuffer[offset + 11] = RxFIFO[12];
-//			dataBuffer[offset + 12] = RxFIFO[13];
-//			//Timestamp
-//			dataBuffer[offset + 13] = RxFIFO[15];
-//			dataBuffer[offset + 14] = RxFIFO[16];
-//
-//			//Moves dataBufferPosition by 1 new packet
-//			if (*dataBufferPosition < 259) {
-//				(*dataBufferPosition)++;
-//			}else {
-//				*dataBufferPosition = 0;
-//			}
-//		}
-//	}
-//	return HAL_OK;
-//}
 
 /**
   * @brief  read the current FIFO content and modifies it and saves it to dataBuffer at position dataBufferPosition
@@ -273,6 +211,17 @@ HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, u
 }
 
 /**
+  * @brief  flushes the sensor's FIFO
+  * @param  sensorNumber: number of sensor up to NUM_SENSORS. sensorCSPin has to be setup first
+  * @param  hspi: pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+  * @retval HAL status
+  */
+HAL_StatusTypeDef ICM42688FlushFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
+	HAL_StatusTypeDef status = ICM42688Write(sensorNumber, hspi, SIGNAL_PATH_RESET, FIFO_FLUSH); //transmit write command and register value
+	return status;
+}
+
+/**
   * @brief  sets up one sensor for SPI communication with CLKIN for a specific ODR & full scale range
   * @param  sensorNumber: number of sensor up to NUM_SENSORS. sensorCSPin has to be setup first
   * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
@@ -295,15 +244,15 @@ HAL_StatusTypeDef ICM42688Setup(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ICM42688Write(sensorNumber, hspi, GYRO_CONFIG0, GYRO_FS_SEL_15_625 | GYRO_ODR_1000) != HAL_OK){
+	if(ICM42688Write(sensorNumber, hspi, GYRO_CONFIG0, GYRO_FS_SEL_15_625 | GYRO_ODR_200) != HAL_OK){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ICM42688Write(sensorNumber, hspi, ACCEL_CONFIG0, ACCEL_FS_SEL_2 | ACCEL_ODR_1000) != HAL_OK){
+	if(ICM42688Write(sensorNumber, hspi, ACCEL_CONFIG0, ACCEL_FS_SEL_2 | ACCEL_ODR_200) != HAL_OK){
 		return HAL_ERROR;
 	}
 	HAL_Delay(1);
-	if(ENABLE_CLKIN){ //Skips setup of CLKIN if define is set to 1
+	if(ENABLE_CLKIN){ //Skips setup of CLKIN if define is set to 0
 		if(ICM42688Write(sensorNumber, hspi, INTF_CONFIG1, INTF_CONFIG1_RESERVED | RTC_MODE | CLKSEL) != HAL_OK){
 			return HAL_ERROR;
 			HAL_Delay(1);

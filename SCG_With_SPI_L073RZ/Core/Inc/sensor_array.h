@@ -26,6 +26,7 @@ extern const SensorCS sensorCSPin[NUM_SENSORS];
 HAL_StatusTypeDef SetupSensors();
 HAL_StatusTypeDef ReadFIFOs(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer);
 HAL_StatusTypeDef ReadSensors(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer);
+HAL_StatusTypeDef FlushFIFOs(SPI_HandleTypeDef *hspi);
 void SetCSStartup();
 
 #endif /* INC_SENSOR_ARRAY_H_ */

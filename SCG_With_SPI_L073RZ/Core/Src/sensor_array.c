@@ -82,6 +82,21 @@ HAL_StatusTypeDef ReadFIFOs(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
 }
 
 /**
+ * @brief  flushes the FIFOs of all sensors
+ * @param  hspi   : pointer to a SPI_HandleTypeDef structure that contains the configuration information for SPI module.
+ * @retval HAL status
+ */
+HAL_StatusTypeDef FlushFIFOs(SPI_HandleTypeDef *hspi){
+	for (uint8_t currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
+		HAL_StatusTypeDef status = ICM42688FlushFIFO(currentSensor, hspi);  //Inputs pointer to start of the space for the data of the current sensor
+		if (status == HAL_ERROR) {
+			return HAL_ERROR;
+		}
+	}
+	return HAL_OK;
+}
+
+/**
   * @brief  set all CS pins to high. They have to be initialized as low, so the sensor doesn't start in I2C/I3C mode
   * @param  none
   * @retval none
