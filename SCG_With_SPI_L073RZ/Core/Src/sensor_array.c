@@ -88,7 +88,7 @@ HAL_StatusTypeDef ReadFIFOs(SPI_HandleTypeDef *hspi, uint8_t *dataBuffer){
  */
 HAL_StatusTypeDef FlushFIFOs(SPI_HandleTypeDef *hspi){
 	for (uint8_t currentSensor = 0; currentSensor < NUM_SENSORS; currentSensor++) {
-		HAL_StatusTypeDef status = ICM42688FlushFIFO(currentSensor, hspi);  //Inputs pointer to start of the space for the data of the current sensor
+		HAL_StatusTypeDef status = ICM42688FlushFIFO(currentSensor, hspi);
 		if (status == HAL_ERROR) {
 			return HAL_ERROR;
 		}

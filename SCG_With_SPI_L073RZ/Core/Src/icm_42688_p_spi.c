@@ -217,7 +217,15 @@ HAL_StatusTypeDef ICM42688Write(uint8_t sensorNumber, SPI_HandleTypeDef *hspi, u
   * @retval HAL status
   */
 HAL_StatusTypeDef ICM42688FlushFIFO(uint8_t sensorNumber, SPI_HandleTypeDef *hspi){
-	HAL_StatusTypeDef status = ICM42688Write(sensorNumber, hspi, SIGNAL_PATH_RESET, FIFO_FLUSH); //transmit write command and register value
+	uint8_t sensorRegister = 0x4B;
+	uint8_t data = 0x02;
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_RESET); //set CS pin of sensor to low
+	HAL_StatusTypeDef status = HAL_SPI_Transmit(hspi, &sensorRegister, 1, 1000); //transmit write command and register value
+	if (status == HAL_OK) {
+			status = HAL_SPI_Transmit(hspi, &data, 1, 1000); //transmit data to register
+		}
+	HAL_GPIO_WritePin(sensorCSPin[sensorNumber].Port, sensorCSPin[sensorNumber].Pin, GPIO_PIN_SET); //set CS pin of sensor to high
+
 	return status;
 }
 
