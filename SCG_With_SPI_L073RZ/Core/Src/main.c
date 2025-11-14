@@ -118,6 +118,10 @@ int main(void)
   static uint8_t dataBuffer[NUM_SENSORS * FIFO_PACKET_SIZE_MODIFIED] = {0};
   uint8_t error[] = "Error";
 
+//  uint8_t tx_slew[2] = {0x13, 0x00};
+//  uint8_t tx_data = 0x75 | 0x80;
+//  uint8_t who_am_i = 0;
+
   uartSetup(&huart2);											//Prints Header and separator bar
   volatile HAL_StatusTypeDef status = SetupSensors(&hspi1);		//Initializes Sensors according to setup at the top of the icm file
   while(status == HAL_ERROR){									//Checks if setup worked
@@ -127,6 +131,13 @@ int main(void)
 
   while (1)
   {
+//	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_RESET); /* Pin selection can be done in main.c */
+//	  HAL_SPI_Transmit(&hspi1, tx_slew, 2, 1000);
+//	  HAL_SPI_Transmit(&hspi1, &tx_data, 1, 1000);
+//	  HAL_SPI_Receive(&hspi1, &who_am_i, 1, 1000);
+//	  HAL_GPIO_WritePin(GPIOB, GPIO_PIN_4, GPIO_PIN_SET);
+//	  HAL_Delay(100);
+
 	  ReadSensors(&hspi1, dataBuffer);							//Reads sensor directly
 	  uartSendMeasurement(&huart2, dataBuffer);					//Prints one measurement of all sensors
     /* USER CODE END WHILE */
@@ -215,7 +226,7 @@ static void MX_SPI1_Init(void)
   hspi1.Init.CLKPolarity = SPI_POLARITY_LOW;
   hspi1.Init.CLKPhase = SPI_PHASE_1EDGE;
   hspi1.Init.NSS = SPI_NSS_SOFT;
-  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_2;
+  hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_128;
   hspi1.Init.FirstBit = SPI_FIRSTBIT_MSB;
   hspi1.Init.TIMode = SPI_TIMODE_DISABLE;
   hspi1.Init.CRCCalculation = SPI_CRCCALCULATION_DISABLE;
